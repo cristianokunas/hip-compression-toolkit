@@ -1,0 +1,10 @@
+*.swp
+*.o
+build_*/
+build/
+.env
+.vscode/
+install/
+
+# Large test data files (generate with scripts/generate_testdata.sh)
+testdata/*.bin
