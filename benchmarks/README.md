@@ -29,12 +29,13 @@ Benchmark executables will be created in `build/benchmarks/` or installed to `bi
 
 ## Available Benchmarks
 
-- `benchmark_lz4_chunked` - LZ4 compression algorithm
-- `benchmark_snappy_chunked` - Snappy compression algorithm
-- `benchmark_cascaded_chunked` - Cascaded compression algorithm
-- `benchmark_gdeflate_chunked` - GDeflate compression algorithm
-- `benchmark_bitcomp_chunked` - Bitcomp compression algorithm
-- `benchmark_ans_chunked` - ANS compression algorithm
+- `benchmark_lz4_chunked` - LZ4 compression algorithm (lossless)
+- `benchmark_snappy_chunked` - Snappy compression algorithm (lossless)
+- `benchmark_cascaded_chunked` - Cascaded compression algorithm (lossless)
+- `benchmark_gdeflate_chunked` - GDeflate compression algorithm (lossless)
+- `benchmark_bitcomp_chunked` - Bitcomp compression algorithm (lossless)
+- `benchmark_ans_chunked` - ANS compression algorithm (lossless)
+- `benchmark_zfp` - ZFP floating-point compression (lossy, scientific data)
 
 ## Running Benchmarks
 
@@ -60,6 +61,61 @@ Run a single benchmark on a specific file:
 - `-t, --tab_separator <true|false>` - Use tabs instead of commas (default: false)
 - `-p, --chunk_size <N>` - Chunk size for splitting data (default: 65536)
 - `-x, --duplicate_data <N>` - Duplicate chunks N times (default: 0)
+
+### ZFP Benchmark (Floating-Point Data)
+
+ZFP is designed for scientific floating-point arrays and uses a different interface:
+
+```bash
+./build/benchmarks/benchmark_zfp \
+  -n 256 256 256 \
+  -r 16.0 \
+  -i 10 \
+  -w 3
+```
+
+**ZFP Options:**
+- `-n <nx> <ny> <nz>` - Array dimensions (default: 256 256 256)
+- `-r <rate>` - Bits per value (default: 16.0, lower = more compression)
+- `-i <iterations>` - Benchmark iterations (default: 10)
+- `-w <warmup>` - Warmup iterations (default: 3)
+- `-f <file>` - Input file (binary float data)
+- `-p <pattern>` - Data pattern: 0=random, 1=smooth, 2=zeros (default: 1)
+
+**ZFP Rate Reference:**
+| Rate | Compression | Error Level |
+|------|-------------|-------------|
+| 32.0 | ~1x | ~10⁻⁷ (near-lossless) |
+| 24.0 | ~1.33x | ~10⁻⁵ |
+| 16.0 | ~2x | ~10⁻³ |
+| 8.0 | ~4x | ~10⁻¹ |
+
+**Example output:**
+```
+========================================
+ZFP Compression Benchmark Results
+========================================
+
+Configuration:
+  Dimensions:      256 x 256 x 256
+  Total elements:  16777216
+  Rate:            16.0 bits/value
+
+Size:
+  Original:        64.00 MB
+  Compressed:      32.00 MB
+  Ratio:           2.00x
+
+Performance:
+  Compression:     2.345 ms (27.28 GB/s)
+  Decompression:   1.234 ms (51.89 GB/s)
+
+Quality (lossy compression error):
+  Max Abs Error:   1.657754e-07
+  Max Rel Error:   1.067210e-01
+  RMSE:            6.620990e-10
+  PSNR:            160.53 dB
+```
 
 ### Using the Benchmark Script
 

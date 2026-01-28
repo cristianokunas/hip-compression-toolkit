@@ -67,11 +67,23 @@ foreach(BENCHMARK_SOURCE ${BENCHMARK_SOURCES})
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/include
     )
-    target_link_libraries(${BENCHMARK_NAME}
-      PRIVATE
-        hipcomp
-        hip::host
-    )
+    
+    # ZFP benchmark needs additional library
+    if(BENCHMARK_NAME MATCHES "benchmark_zfp")
+      target_link_libraries(${BENCHMARK_NAME}
+        PRIVATE
+          hipcomp
+          zfp_hip_impl
+          hip::host
+      )
+    else()
+      target_link_libraries(${BENCHMARK_NAME}
+        PRIVATE
+          hipcomp
+          hip::host
+      )
+    endif()
+    
     set_target_properties(${BENCHMARK_NAME} PROPERTIES
       HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
     )
