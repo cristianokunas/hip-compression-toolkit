@@ -52,7 +52,9 @@
 #include "hipcomp.h"
 #include "hipcomp/cascaded.h"
 #include "hipcomp/lz4.h"
+#ifdef ENABLE_BITCOMP
 #include "hipcomp/bitcomp.h"
+#endif
 
 #include "hipcomp/hipcompManager.hpp"
 #include "hipcomp/hipcompManagerFactory.hpp"

@@ -51,12 +51,18 @@
 
 #include "hipcomp.hpp"
 #include "hipcomp/hipcompManager.hpp"
+#ifdef ENABLE_ANS
 #include "hipcomp/ans.hpp"
+#endif
 #include "hipcomp/lz4.hpp"
 #include "hipcomp/snappy.hpp"
+#ifdef ENABLE_GDEFLATE
 #include "hipcomp/gdeflate.hpp"
+#endif
 #include "hipcomp/cascaded.hpp"
+#ifdef ENABLE_BITCOMP
 #include "hipcomp/bitcomp.hpp"
+#endif
 #include "hipcomp_common_deps/hlif_shared_types.hpp"
 #include "HipUtils.h"
 
@@ -94,12 +100,16 @@ std::shared_ptr<hipcompManagerBase> create_manager(const uint8_t* comp_buffer, h
     }
     case FormatType::GDeflate: 
     {
+#ifdef ENABLE_GDEFLATE
       hipcompBatchedGdeflateOpts_t format_spec;
       const hipcompBatchedGdeflateOpts_t* gpu_format_header = reinterpret_cast<const hipcompBatchedGdeflateOpts_t*>(comp_buffer + sizeof(CommonHeader));
       HipUtils::check(hipMemcpyAsync(&format_spec, gpu_format_header, sizeof(hipcompBatchedGdeflateOpts_t), hipMemcpyDefault, stream));
       HipUtils::check(hipStreamSynchronize(stream));
 
       res = std::make_shared<GdeflateManager>(cpu_common_header.uncomp_chunk_size, format_spec.algo, stream, device_id);
+#else
+      throw HipCompException(hipcompErrorNotSupported, "GDeflate support not available in this build.");
+#endif
       break;
     }
     case FormatType::Bitcomp: 
@@ -118,12 +128,16 @@ std::shared_ptr<hipcompManagerBase> create_manager(const uint8_t* comp_buffer, h
     }
     case FormatType::ANS: 
     {
+#ifdef ENABLE_ANS
       ANSFormatSpecHeader format_spec;
       const ANSFormatSpecHeader* gpu_format_header = reinterpret_cast<const ANSFormatSpecHeader*>(comp_buffer + sizeof(CommonHeader));
       HipUtils::check(hipMemcpyAsync(&format_spec, gpu_format_header, sizeof(ANSFormatSpecHeader), hipMemcpyDefault, stream));
       HipUtils::check(hipStreamSynchronize(stream));
 
       res = std::make_shared<ANSManager>(cpu_common_header.uncomp_chunk_size, stream, device_id);
+#else
+      throw HipCompException(hipcompErrorNotSupported, "ANS support not available in this build.");
+#endif
       break;
     }
     case FormatType::Cascaded: 

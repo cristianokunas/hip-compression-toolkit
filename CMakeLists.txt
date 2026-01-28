@@ -55,6 +55,7 @@ option(BUILD_BENCHMARKS "Build benchmark executables." OFF)
 option(BUILD_STATIC "Build a static library." OFF)
 option(CG_WORKAROUND "Use HIP cooperative groups workaround that is shipped with this project. Has no effect on CUDA builds." OFF)
 option(USE_WARPSIZE_32 "Use wave size 32, e.g., for gfx1100 devices. This option is only applicable for the ROCm backend. Has no effect if the CUDA backend is selected." OFF)
+option(ZFP_WITH_HIP "Build ZFP with HIP GPU support (recommended)" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_HIP_STANDARD 17)

@@ -52,11 +52,17 @@
 #include <cassert>
 
 #include "hipcompManager.hpp"
+#ifdef ENABLE_ANS
 #include "ans.hpp"
+#endif
+#ifdef ENABLE_GDEFLATE
 #include "gdeflate.hpp"
+#endif
 #include "lz4.hpp"
 #include "snappy.hpp"
+#ifdef ENABLE_BITCOMP
 #include "bitcomp.hpp"
+#endif
 #include "cascaded.hpp"
 
 namespace hipcomp {

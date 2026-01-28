@@ -2,12 +2,24 @@
 
 A high-performance GPU compression library for AMD GPUs using HIP/ROCm, featuring optimized implementations of LZ4, Snappy, and Cascaded compression algorithms.
 
+## Supported Algorithms
+
+| Algorithm | Status | Description |
+|-----------|--------|-------------|
+| **LZ4** | ✅ Production | Fast lossless compression - primary algorithm |
+| **Snappy** | ✅ Production | High-speed compression by Google |
+| **Cascaded** | ✅ Production | Multi-stage: Delta + RLE + Bit-packing |
+| **ZFP** | 🚧 Development | Lossy/lossless compression for floating-point arrays |
 ## Features
 
 - **LZ4**: Fast lossless compression algorithm
 - **Snappy**: High-speed compression developed by Google
 - **Cascaded**: Multi-stage compression combining Delta, RLE, and Bit-packing
-- **ZFP** *(planned)*: Floating-point array compression
+- **ZFP**: High-throughput compression for 1D/2D/3D floating-point and integer arrays
+  - Fixed-rate mode: Predictable compression ratio
+  - Fixed-precision mode: Control bit planes
+  - Fixed-accuracy mode: Bounded error tolerance
+  - Reversible mode: Lossless compression
 
 ### Optimizations
 
