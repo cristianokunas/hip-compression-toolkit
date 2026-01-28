@@ -36,17 +36,19 @@
 #include "hipcomp/lz4.h"
 #include "hipcomp/snappy.h"
 #include "hipcomp/cascaded.h"
-#include "hipcomp/gdeflate.h"
-#include "hipcomp/bitcomp.h"
-#include "hipcomp/ans.h"
+// Experimental algorithms (moved to experimental folder)
+// #include "hipcomp/gdeflate.h"
+// #include "hipcomp/bitcomp.h"
+// #include "hipcomp/ans.h"
 #else
 #include "nvcomp.h"
 #include "nvcomp/lz4.h"
 #include "nvcomp/snappy.h"
 #include "nvcomp/cascaded.h"
-#include "nvcomp/gdeflate.h"
-#include "nvcomp/bitcomp.h"
-#include "nvcomp/ans.h"
+// Experimental algorithms (moved to experimental folder)
+// #include "nvcomp/gdeflate.h"
+// #include "nvcomp/bitcomp.h"
+// #include "nvcomp/ans.h"
 #endif
 
 #include <fstream>
