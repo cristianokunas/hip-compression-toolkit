@@ -9,6 +9,7 @@ A high-performance GPU compression library for AMD GPUs using HIP/ROCm, featurin
 | **LZ4** | ✅ Production | Fast lossless compression - primary algorithm |
 | **Snappy** | ✅ Production | High-speed compression by Google |
 | **Cascaded** | ✅ Production | Multi-stage: Delta + RLE + Bit-packing |
+| **ZFP** | ✅ Production | Lossy/lossless compression for floating-point arrays |
 | ANS | 🚧 Experimental | See `experimental/` folder |
 | Bitcomp | 🚧 Experimental | See `experimental/` folder |
 | GDeflate | 🚧 Experimental | See `experimental/` folder |
@@ -18,6 +19,11 @@ A high-performance GPU compression library for AMD GPUs using HIP/ROCm, featurin
 - **LZ4**: Fast lossless compression algorithm
 - **Snappy**: High-speed compression developed by Google
 - **Cascaded**: Multi-stage compression combining Delta, RLE, and Bit-packing
+- **ZFP**: High-throughput compression for 1D/2D/3D floating-point and integer arrays
+  - Fixed-rate mode: Predictable compression ratio
+  - Fixed-precision mode: Control bit planes
+  - Fixed-accuracy mode: Bounded error tolerance
+  - Reversible mode: Lossless compression
 
 ### Optimizations
 

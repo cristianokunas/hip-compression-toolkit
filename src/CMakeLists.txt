@@ -82,24 +82,98 @@ file(GLOB CPP_SOURCES
   ./lowlevel/*.cpp
   ./highlevel/*.cpp)
 
+# ZFP integration sources - GPU native with HIP
+option(ZFP_WITH_HIP "Build ZFP with HIP GPU support (recommended)" ON)
+
+set(ZFP_EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external/zfp)
+
+# Core ZFP sources (C code, always needed)
+file(GLOB ZFP_CORE_SOURCES
+  ${ZFP_EXTERNAL_DIR}/src/bitstream.c
+  ${ZFP_EXTERNAL_DIR}/src/zfp.c
+  ${ZFP_EXTERNAL_DIR}/src/encode*.c
+  ${ZFP_EXTERNAL_DIR}/src/decode*.c
+)
+
+# ZFP HIP sources for GPU-native compression
+if(ZFP_WITH_HIP)
+  message(STATUS "Building ZFP with HIP GPU support")
+  
+  # ZFP HIP sources will be in separate library to avoid flag contamination
+  set(ZFP_HIP_SOURCES
+    ${ZFP_EXTERNAL_DIR}/src/hip/interface.hip
+    ${CMAKE_CURRENT_SOURCE_DIR}/zfp/ZfpBatchGPU.hip
+  )
+  
+  # Create separate HIP library - include ZFP core sources to be self-contained
+  add_library(zfp_hip_impl SHARED ${ZFP_HIP_SOURCES} ${ZFP_CORE_SOURCES})
+  target_include_directories(zfp_hip_impl PRIVATE "${ZFP_EXTERNAL_DIR}/include")
+  target_include_directories(zfp_hip_impl PRIVATE "${ZFP_EXTERNAL_DIR}/src")
+  target_include_directories(zfp_hip_impl PRIVATE "${ZFP_EXTERNAL_DIR}/src/hip")
+  target_include_directories(zfp_hip_impl PRIVATE "${ZFP_EXTERNAL_DIR}/src/share")
+  target_include_directories(zfp_hip_impl PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  target_compile_definitions(zfp_hip_impl PRIVATE ZFP_WITH_HIP BIT_STREAM_WORD_TYPE=uint64)
+  target_link_libraries(zfp_hip_impl PRIVATE hip::hipcub)
+  set_target_properties(zfp_hip_impl PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    INSTALL_RPATH "\$ORIGIN"
+  )
+  
+  set(ZFP_LINK_LIBS zfp_hip_impl)
+  # Don't include ZFP_CORE_SOURCES in main lib since they're in zfp_hip_impl
+  set(ZFP_CORE_FOR_MAIN "")
+else()
+  message(STATUS "Building ZFP CPU-only (fallback)")
+  set(ZFP_HIP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/zfp/ZfpBatch.cpp)
+  set(ZFP_LINK_LIBS "")
+  set(ZFP_CORE_FOR_MAIN ${ZFP_CORE_SOURCES})
+endif()
+
 if (CUDA_BACKEND)
   setup_cuda_devices()
   set_source_files_properties(${HIP_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif (CUDA_BACKEND)
 
+if(ZFP_WITH_HIP)
+  # Without ZFP sources in main library (they are in zfp_hip_impl)
+  set(MAIN_ZFP_SOURCES "")
+else()
+  set(MAIN_ZFP_SOURCES ${ZFP_CORE_FOR_MAIN} ${ZFP_HIP_SOURCES})
+endif()
+
 if (BUILD_STATIC)
-  add_library(hipcomp STATIC ${HIP_SOURCES} ${CPP_SOURCES})
+  add_library(hipcomp STATIC ${HIP_SOURCES} ${CPP_SOURCES} ${MAIN_ZFP_SOURCES})
 else()
   if (MSVC_VERSION)
-    # we have to export all symbols on windows for a dll
-    add_library(hipcomp STATIC ${HIP_SOURCES} ${CPP_SOURCES})
+    add_library(hipcomp STATIC ${HIP_SOURCES} ${CPP_SOURCES} ${MAIN_ZFP_SOURCES})
   else()
-    add_library(hipcomp SHARED ${HIP_SOURCES} ${CPP_SOURCES})
+    add_library(hipcomp SHARED ${HIP_SOURCES} ${CPP_SOURCES} ${MAIN_ZFP_SOURCES})
   endif()
+endif()
+
+# Link ZFP HIP library if needed (use PRIVATE to avoid export issues)
+if(ZFP_WITH_HIP)
+  # Use whole-archive to include all symbols from static library
+  target_link_libraries(hipcomp PRIVATE $<TARGET_FILE:zfp_hip_impl>)
+  add_dependencies(hipcomp zfp_hip_impl)
+  # Install zfp_hip_impl alongside hipcomp
+  install(TARGETS zfp_hip_impl LIBRARY DESTINATION lib)
 endif()
 
 target_include_directories(hipcomp PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../src>")
 target_include_directories(hipcomp PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>")
+
+# ZFP include directories
+target_include_directories(hipcomp PRIVATE "${ZFP_EXTERNAL_DIR}/include")
+target_include_directories(hipcomp PRIVATE "${ZFP_EXTERNAL_DIR}/src")
+target_include_directories(hipcomp PRIVATE "${ZFP_EXTERNAL_DIR}/src/hip")
+target_include_directories(hipcomp PRIVATE "${ZFP_EXTERNAL_DIR}/src/share")
+
+# ZFP compile definitions
+target_compile_definitions(hipcomp PRIVATE BIT_STREAM_WORD_TYPE=uint64)
+if(ZFP_WITH_HIP)
+  target_compile_definitions(hipcomp PRIVATE ZFP_WITH_HIP)
+endif()
 
 if (CUDA_BACKEND)
   set_cuda_compilation_options()
