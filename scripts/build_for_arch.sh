@@ -43,6 +43,9 @@ if [ "$ARCH_NAME" = "auto" ]; then
             gfx942)
                 ARCH_NAME="mi300x"
                 ;;
+            gfx90a)
+                ARCH_NAME="mi210"
+                ;;
             gfx906)
                 ARCH_NAME="mi50"
                 ;;
@@ -67,6 +70,11 @@ case "$ARCH_NAME" in
         CMAKE_ARCH="gfx942"
         USE_WAVE32=""
         ARCH_LABEL="MI300X (gfx942)"
+        ;;
+    mi210)
+        CMAKE_ARCH="gfx90a"
+        USE_WAVE32=""
+        ARCH_LABEL="MI210 (gfx90a)"
         ;;
     mi50)
         CMAKE_ARCH="gfx906"

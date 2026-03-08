@@ -78,10 +78,12 @@ convert_rsf() {
 }
 
 # Function to create size-limited chunks from RSF
+# Extracts from the MIDDLE of simulation (n4/2+) for more representative data
 create_chunks_from_rsf() {
     local rsf_file="$1"
     local size_label="$2"
     local target_size_mb="$3"
+    local start_fraction="${4:-0.5}"  # Default: start from middle
     
     if [ ! -f "$rsf_file" ]; then
         print_warn "RSF file not found: $rsf_file"
@@ -91,41 +93,31 @@ create_chunks_from_rsf() {
     # Get base name without extension
     local basename_rsf=$(basename "$rsf_file" .rsf)
     
-    # First convert full file to temp location
-    local temp_full="${OUTPUT_DIR}/.temp_${size_label}_${basename_rsf}.bin"
-    
-    print_step "Converting RSF: $(basename $rsf_file)"
-    python3 "$CONVERTER" "$rsf_file" "$temp_full" --no-validate -q
-    
-    if [ ! -f "$temp_full" ]; then
-        print_warn "Conversion failed for $rsf_file"
-        return 1
-    fi
-    
-    # Get actual file size
-    local actual_size_mb=$(du -m "$temp_full" | cut -f1)
-    print_info "  Full size: ${actual_size_mb} MB"
-    
-    # Create chunk of desired size
-    local output_name="${size_label}_${basename_rsf}_${target_size_mb}mb.bin"
+    # Output file name indicates extraction region
+    local output_name="${size_label}_${basename_rsf}_${target_size_mb}mb_mid.bin"
     local output_file="${OUTPUT_DIR}/${output_name}"
     
     if [ -f "$output_file" ]; then
         print_warn "  $output_name already exists, skipping"
-        rm -f "$temp_full"
         return 0
     fi
     
-    if [ $actual_size_mb -le $target_size_mb ]; then
-        # File is smaller than target, use entire file
-        mv "$temp_full" "$output_file"
-        print_info "  Created: $output_name (${actual_size_mb} MB - full file)"
-    else
-        # Extract chunk from beginning
-        dd if="$temp_full" of="$output_file" bs=1M count=$target_size_mb status=none 2>/dev/null
-        rm -f "$temp_full"
-        print_info "  Created: $output_name (${target_size_mb} MB chunk)"
+    local target_bytes=$((target_size_mb * 1024 * 1024))
+    
+    print_step "Converting RSF: $(basename $rsf_file) [start_fraction=${start_fraction}]"
+    
+    python3 "$CONVERTER" "$rsf_file" "$output_file" \
+        --start-fraction "$start_fraction" \
+        --max-bytes "$target_bytes" \
+        --no-validate
+    
+    if [ ! -f "$output_file" ]; then
+        print_warn "Conversion failed for $rsf_file"
+        return 1
     fi
+    
+    local actual_size_mb=$(du -m "$output_file" | cut -f1)
+    print_info "  Created: $output_name (${actual_size_mb} MB, from middle of simulation)"
     
     echo ""
 }
@@ -135,12 +127,13 @@ process_rsf_directory() {
     local size_dir="$1"
     local size_label="$2"
     local target_size_mb="$3"
+    local start_fraction="${4:-0.5}"
     
     if [ ! -d "$size_dir" ]; then
         return
     fi
     
-    print_info "Processing $size_label directory: $size_dir (target: ${target_size_mb} MB)"
+    print_info "Processing $size_label directory: $size_dir (target: ${target_size_mb} MB, from middle)"
     
     # Find all .rsf header files (not .rsf@ binary files)
     local rsf_count=0
@@ -150,8 +143,8 @@ process_rsf_directory() {
             continue
         fi
         
-        # Create size-limited chunk
-        create_chunks_from_rsf "$rsf_file" "$size_label" "$target_size_mb"
+        # Create size-limited chunk from middle of simulation
+        create_chunks_from_rsf "$rsf_file" "$size_label" "$target_size_mb" "$start_fraction"
         
         rsf_count=$((rsf_count + 1))
     done < <(find "$size_dir" -maxdepth 1 -name "*.rsf" -type f -print0)
@@ -168,27 +161,48 @@ process_rsf_directory() {
 # Check for RSF base directory
 if [ -d "$DEFAULT_RSF_BASE" ]; then
     print_info "Searching for RSF files in: $DEFAULT_RSF_BASE"
-    print_info "Creating size-limited chunks suitable for GPU memory"
+    print_info "ALL test sizes are extracted from the LARGE dataset (most representative data)"
+    print_info "  -> Large RSF (448x448x448, n4=201) has the richest wavefield"
+    print_info "  -> Extracting from middle of simulation (n4/2+) to avoid zero-dominated regions"
+    print_info "  -> Small/medium RSF sources are too sparse (too many zeros)"
     echo ""
     
-    # Process each size category with appropriate size limits
-    # Small: 10 MB (quick validation tests)
-    process_rsf_directory "${DEFAULT_RSF_BASE}/small" "small" 10
+    # Start fraction 0.5 = from the middle of the simulation
+    START_FRAC=0.5
     
-    # Medium: 100 MB (standard benchmarks)
-    process_rsf_directory "${DEFAULT_RSF_BASE}/medium" "medium" 100
+    # ALWAYS use LARGE source for all sizes
+    # Rationale:
+    #   - small RSF (n4=11):  ~83-100% zeros even at last timestep
+    #   - medium RSF (n4=101): ~8% zeros at ts=50+ (ok but smaller cube 256^3)
+    #   - large RSF (n4=201):  ~8% zeros at ts=100+, larger cube 448^3 = best quality
     
-    # Large: 1 GB (stress tests)
-    process_rsf_directory "${DEFAULT_RSF_BASE}/large" "large" 1024
+    LARGE_DIR="${DEFAULT_RSF_BASE}/large"
     
-    # Extra Large: 4 GB (maximum stress, from large dataset)
-    print_info "Creating extra-large dataset from large source"
-    if [ -d "${DEFAULT_RSF_BASE}/large" ]; then
+    if [ -d "$LARGE_DIR" ]; then
+        print_info "*** Using LARGE source (448^3 x 201 timesteps) for ALL sizes ***"
+        echo ""
+        
+        # Small: 10 MB chunk (quick validation)
+        process_rsf_directory "$LARGE_DIR" "small" 10 "$START_FRAC"
+        
+        # Medium: 100 MB (standard benchmarks)
+        process_rsf_directory "$LARGE_DIR" "medium" 100 "$START_FRAC"
+        
+        # Large: 1 GB (stress tests)
+        process_rsf_directory "$LARGE_DIR" "large" 1024 "$START_FRAC"
+        
+        # Extra Large: 4 GB (maximum stress)
+        print_info "Creating extra-large dataset from large source"
         while IFS= read -r -d '' rsf_file; do
             if [[ "$rsf_file" != *.rsf@ ]]; then
-                create_chunks_from_rsf "$rsf_file" "xlarge" 4096
+                create_chunks_from_rsf "$rsf_file" "xlarge" 4096 "$START_FRAC"
             fi
-        done < <(find "${DEFAULT_RSF_BASE}/large" -maxdepth 1 -name "*.rsf" -type f -print0)
+        done < <(find "$LARGE_DIR" -maxdepth 1 -name "*.rsf" -type f -print0)
+    else
+        print_error "LARGE RSF directory not found: $LARGE_DIR"
+        print_info "The large dataset is required for representative test data."
+        print_info "Expected: ${LARGE_DIR}/TTI.rsf + TTI.rsf@"
+        exit 1
     fi
     echo ""
     
