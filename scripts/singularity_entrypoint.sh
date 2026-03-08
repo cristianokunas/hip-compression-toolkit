@@ -5,11 +5,18 @@
 # This script is the default %runscript for the Singularity container.
 # It detects the GPU, prepares test data, and runs benchmarks automatically.
 #
-# Usage (from host):
-#   singularity run --bind /path/to/rsf:/rsf --bind /path/to/output:/output hipcomp.sif [OPTIONS]
+# Usage (from host — prefer run_singularity.sh wrapper):
+#   ./scripts/run_singularity.sh hipcomp.sif /path/to/rsf [OPTIONS]
 #
 # Or manually:
-#   singularity exec hipcomp.sif /opt/hip-compression-toolkit/scripts/run_benchmarks_auto.sh [OPTIONS]
+#   singularity run --rocm \
+#     --bind /path/to/rsf/run:/data/rsf \
+#     --bind ./results:/data/results \
+#     hipcomp.sif -r /data/rsf -o /data/results [OPTIONS]
+#
+# Or exec directly:
+#   singularity exec --rocm hipcomp.sif \
+#     /opt/hip-compression-toolkit/scripts/run_benchmarks_auto.sh [OPTIONS]
 # =============================================================================
 
 set -e
@@ -30,9 +37,21 @@ elif command -v nvidia-smi &> /dev/null; then
     echo "[INFO] NVIDIA GPU detected"
     nvidia-smi -L 2>/dev/null | head -5 || echo "[WARN] Could not query GPU"
 else
-    echo "[ERROR] No GPU runtime detected (need ROCm or CUDA)"
-    exit 1
+    echo "[WARN] No GPU runtime detected — benchmarks may fail"
 fi
+echo ""
+
+# Show bind mount status
+echo "[INFO] Bind mount status:"
+for mp in /data/rsf /data/results /data/testdata; do
+    if [ -d "$mp" ] && [ "$(ls -A "$mp" 2>/dev/null)" ]; then
+        echo "  $mp -> mounted ($(ls -1 "$mp" | wc -l) items)"
+    elif [ -d "$mp" ]; then
+        echo "  $mp -> mounted (empty)"
+    else
+        echo "  $mp -> not mounted"
+    fi
+done
 echo ""
 
 # Forward all arguments to the benchmark runner

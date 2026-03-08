@@ -143,16 +143,17 @@ ENV_LABEL=$(get_env_label "$GPU_ARCH")
 # -------------------- Find Benchmark Executables --------------------
 find_benchmarks() {
     local search_dirs=(
-        "$PROJECT_ROOT/build/benchmarks"
         "$PROJECT_ROOT/build/bin"
-        "$PROJECT_ROOT/build_latest/benchmarks"
+        "$PROJECT_ROOT/build/benchmarks"
         "$PROJECT_ROOT/build_latest/bin"
-        "${HIPCOMP_BUILD:-}/benchmarks"
-        "${HIPCOMP_BUILD:-}/bin"
+        "$PROJECT_ROOT/build_latest/benchmarks"
+        "/opt/hipcomp/bin"
+        "${HIPCOMP_BUILD:-/nonexistent}/bin"
+        "${HIPCOMP_BUILD:-/nonexistent}/benchmarks"
     )
 
     for dir in "${search_dirs[@]}"; do
-        if [ -d "$dir" ] && ls "$dir"/benchmark_*_chunked 2>/dev/null | head -1 > /dev/null; then
+        if [ -d "$dir" ] && compgen -G "$dir/benchmark_*_chunked" > /dev/null 2>&1; then
             echo "$dir"
             return 0
         fi
