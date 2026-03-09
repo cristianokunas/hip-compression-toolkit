@@ -141,7 +141,7 @@ Com base em dados sísmicos similares:
 
 ```bash
 # 1. Converter dados RSF
-cd /ssd/cakunas/hipCOMP-core
+cd /ssd/cakunas/hip-compression-toolkit
 ./scripts/prepare_rsf_testdata.sh
 
 # 2. Verificar arquivos gerados

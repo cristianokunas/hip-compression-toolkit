@@ -92,14 +92,14 @@ mkdir -p "$COMPARISON_DIR"
 print_header "Experiment Metadata"
 
 echo -e "${CYAN}BASELINE:${NC}"
-if [ -f "$BASELINE_DIR/metadata.txt" ]; then
-    cat "$BASELINE_DIR/metadata.txt" | head -5 | sed 's/^/  /'
+if [ -f "$BASELINE_DIR/metadata.json" ]; then
+    cat "$BASELINE_DIR/metadata.json" | head -5 | sed 's/^/  /'
 fi
 echo ""
 
 echo -e "${CYAN}OPTIMIZED:${NC}"
-if [ -f "$OPTIMIZED_DIR/metadata.txt" ]; then
-    cat "$OPTIMIZED_DIR/metadata.txt" | head -5 | sed 's/^/  /'
+if [ -f "$OPTIMIZED_DIR/metadata.json" ]; then
+    cat "$OPTIMIZED_DIR/metadata.json" | head -5 | sed 's/^/  /'
 fi
 echo ""
 

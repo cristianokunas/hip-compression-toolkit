@@ -176,68 +176,27 @@ for algo in $ALGORITHMS; do
     fi
 done
 
-# -------------------- Generate Test Data (if RSF dir provided) --------------------
-if [ -n "$RSF_DIR" ] && [ "$SKIP_TESTDATA_GEN" = "false" ]; then
-    print_header "Generating Test Data from RSF"
-    print_info "RSF source: $RSF_DIR"
-    print_info "Start fraction: $RSF_START_FRACTION (extracting from middle of simulation)"
+# -------------------- Generate Test Data --------------------
+if [ "$SKIP_TESTDATA_GEN" = "false" ]; then
+    print_header "Generating Test Data"
     
-    CONVERTER="$SCRIPT_DIR/convert_rsf_to_binary.py"
-    if [ ! -f "$CONVERTER" ]; then
-        print_error "Converter not found: $CONVERTER"
-        exit 1
-    fi
-
-    mkdir -p "$TESTDATA_DIR"
-    
-    # ALWAYS use LARGE RSF source for all test sizes.
-    # Rationale: small/medium RSF have too many zeros (wave hasn't propagated).
-    # Large RSF (448^3, n4=201) from the middle has only ~8% zeros = best quality.
-    
-    LARGE_SRC="$RSF_DIR/large"
-    if [ ! -d "$LARGE_SRC" ]; then
-        print_error "Large RSF directory not found: $LARGE_SRC"
-        print_info "The large dataset is required for representative test data."
+    GENERATOR="$SCRIPT_DIR/generate_testdata.sh"
+    if [ ! -f "$GENERATOR" ]; then
+        print_error "Test data generator not found: $GENERATOR"
         exit 1
     fi
     
-    print_info "Using LARGE source for ALL sizes (most representative data)"
+    GEN_ARGS=(-o "$TESTDATA_DIR")
+    if [ -n "$RSF_DIR" ]; then
+        GEN_ARGS+=(-r "$RSF_DIR" -s "$RSF_START_FRACTION")
+        print_info "RSF source: $RSF_DIR (start_fraction=$RSF_START_FRACTION)"
+    fi
     
-    # Define all sizes: name -> target_mb
-    declare -A SIZE_CONFIGS
-    SIZE_CONFIGS["small"]="10"
-    SIZE_CONFIGS["medium"]="100"
-    SIZE_CONFIGS["large"]="1024"
-    
-    for size_cat in small medium large; do
-        target_mb="${SIZE_CONFIGS[$size_cat]}"
-        src_dir="$LARGE_SRC"
-        
-        for rsf_file in "$src_dir"/*.rsf; do
-            [ ! -f "$rsf_file" ] && continue
-            [[ "$rsf_file" == *.rsf@ ]] && continue
-            
-            basename_rsf=$(basename "$rsf_file" .rsf)
-            output_file="$TESTDATA_DIR/${size_cat}_${basename_rsf}_${target_mb}mb_mid.bin"
-            
-            if [ -f "$output_file" ]; then
-                print_info "  $output_file already exists, skipping"
-                continue
-            fi
-            
-            target_bytes=$((target_mb * 1024 * 1024))
-            print_step "  Converting: $rsf_file -> $(basename $output_file) [from middle]"
-            
-            if [ "$DRY_RUN" = "true" ]; then
-                echo "  [DRY-RUN] python3 $CONVERTER $rsf_file $output_file --start-fraction $RSF_START_FRACTION --max-bytes $target_bytes --no-validate"
-            else
-                python3 "$CONVERTER" "$rsf_file" "$output_file" \
-                    --start-fraction "$RSF_START_FRACTION" \
-                    --max-bytes "$target_bytes" \
-                    --no-validate
-            fi
-        done
-    done
+    if [ "$DRY_RUN" = "true" ]; then
+        echo "  [DRY-RUN] bash $GENERATOR ${GEN_ARGS[*]}"
+    else
+        bash "$GENERATOR" "${GEN_ARGS[@]}"
+    fi
     echo ""
 fi
 
