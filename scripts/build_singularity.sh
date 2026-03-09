@@ -27,6 +27,7 @@ print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # -------------------- Defaults --------------------
 GPU_ARCH="gfx942"
+BRANCH="main"
 OUTPUT_NAME=""
 DEF_FILE="$PROJECT_ROOT/singularity/defhip_benchmark.def"
 FORCE=false
@@ -43,6 +44,7 @@ OPTIONS:
     -a, --arch ARCH      GPU architecture (default: gfx942)
                          Supported: gfx942 (MI300X), gfx90a (MI210),
                                     gfx906 (MI50), gfx1100 (RX7900XT)
+    -b, --branch BRANCH  Git branch to build from (default: main)
     -o, --output FILE    Output .sif filename (default: hipcomp_<arch>.sif)
     -m, --mode MODE      Build privilege mode (default: auto-detect)
                          fakeroot  - use --fakeroot (no sudo needed, e.g. PCAD UFRGS)
@@ -88,6 +90,7 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -a|--arch)     GPU_ARCH="$2"; shift 2 ;;
+        -b|--branch)   BRANCH="$2"; shift 2 ;;
         -o|--output)   OUTPUT_NAME="$2"; shift 2 ;;
         -m|--mode)     BUILD_MODE="$2"; shift 2 ;;
         -f|--force)    FORCE=true; shift ;;
@@ -143,9 +146,9 @@ echo -e "${BOLD}  Building hipCOMP Singularity Image${NC}"
 echo -e "${BOLD}============================================${NC}"
 echo ""
 print_info "Architecture: $GPU_ARCH ($FRIENDLY)"
+print_info "Branch:       $BRANCH"
 print_info "Definition:   $DEF_FILE"
 print_info "Output:       $OUTPUT_NAME"
-print_info "Build context: $PROJECT_ROOT"
 
 # -------------------- Detect Privilege Mode --------------------
 detect_build_mode() {
@@ -198,19 +201,15 @@ case "$BUILD_MODE" in
         ;;
 esac
 
-# Singularity builds need to run from the directory
-# where %files paths are relative to.
-# Our .def copies "." -> /opt/hip-compression-toolkit,
-# so we build from the project root.
-cd "$PROJECT_ROOT"
-
-print_info "Build command: ${BUILD_CMD[*]} ${FORCE:+--force} --build-arg GPU_ARCH=$GPU_ARCH $OUTPUT_NAME $DEF_FILE"
+# No need to change directory - the .def clones from GitHub directly
+print_info "Build command: ${BUILD_CMD[*]} ${FORCE:+--force} --build-arg GPU_ARCH=$GPU_ARCH --build-arg BRANCH=$BRANCH $OUTPUT_NAME $DEF_FILE"
 print_info "Starting build (this may take 20-40 minutes)..."
 echo ""
 
 "${BUILD_CMD[@]}" \
     ${FORCE:+--force} \
     --build-arg "GPU_ARCH=$GPU_ARCH" \
+    --build-arg "BRANCH=$BRANCH" \
     "$OUTPUT_NAME" \
     "$DEF_FILE"
 

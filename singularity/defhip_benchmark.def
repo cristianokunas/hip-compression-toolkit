@@ -4,12 +4,8 @@ From: ubuntu:24.04
 %arguments
     # GPU architecture: gfx942 (MI300X), gfx90a (MI210), gfx906 (MI50), gfx1100 (RX 7900 XT)
     GPU_ARCH=gfx942
-
-%files
-    # Copy hip-compression-toolkit source into image
-    # When building from repo root: singularity build --build-arg GPU_ARCH=gfx942 hipcomp.sif singularity/defhip_benchmark.def
-    # The build context is the directory containing the .def file's parent
-    . /opt/hip-compression-toolkit
+    # Git branch to build from
+    BRANCH=main
 
 %post
     # Create standard bind mount points for host data
@@ -45,11 +41,15 @@ From: ubuntu:24.04
     export PATH=$ROCM_PATH/bin:$PATH
 
     # ====================================
-    # Build hip-compression-toolkit
+    # Clone and build hip-compression-toolkit
     # ====================================
     GPU_ARCH="{{ GPU_ARCH }}"
-    
-    cd /opt/hip-compression-toolkit
+    BRANCH="{{ BRANCH }}"
+
+    cd /opt
+    git clone --branch "$BRANCH" --single-branch --depth 1 \
+        https://github.com/cristianokunas/hip-compression-toolkit.git
+    cd hip-compression-toolkit
     mkdir -p build && cd build
 
     # Determine wave size flag for RDNA3
