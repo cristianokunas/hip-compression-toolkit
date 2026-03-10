@@ -1,7 +1,5 @@
-#pragma once
-
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2017-2020, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,21 +47,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <memory>
+#include "Check.h"
 
-#include "hipcompManager.hpp"
+#include "arcto.h"
+#include "arcto/cascaded.h"
+#include "arcto/lz4.h"
+#include "arcto/bitcomp.h"
 
-namespace hipcomp {
+#include "arcto/arctoManager.hpp"
+#include "arcto/arctoManagerFactory.hpp"
 
-struct LZ4FormatSpecHeader {
-  hipcompType_t data_type;
-};
-
-struct LZ4Manager : PimplManager {
-
-  LZ4Manager(size_t uncomp_chunk_size, hipcompType_t data_type, hipStream_t user_stream = 0, const int device_id = 0);
-
-  ~LZ4Manager();
-};
-
-} // namespace hipcomp
+#include <cstdlib>
+#include <cstring>
+#include <iostream>

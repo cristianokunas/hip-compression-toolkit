@@ -52,9 +52,9 @@
 #include <memory>
 #include <vector>
 
-#include "hipcomp.h"
+#include "arcto.h"
 
-namespace hipcomp {
+namespace arcto {
 
 /******************************************************************************
  * CLASSES ********************************************************************
@@ -69,7 +69,7 @@ struct PinnedPtrPool;
 /**
  * @brief Config used to aggregate information about the compression of a particular buffer.
  * 
- * Contains a "PinnedPtrHandle" to an hipcompStatus. After the compression is complete,
+ * Contains a "PinnedPtrHandle" to an arctoStatus. After the compression is complete,
  * the user can check the result status which resides in pinned host memory.
  */
 struct CompressionConfig {
@@ -84,14 +84,14 @@ public: // API
   size_t num_chunks;
 
   /**
-   * @brief Construct the config given an hipcompStatus_t memory pool
+   * @brief Construct the config given an arctoStatus_t memory pool
    */
-  CompressionConfig(PinnedPtrPool<hipcompStatus_t>& pool, size_t uncompressed_buffer_size);
+  CompressionConfig(PinnedPtrPool<arctoStatus_t>& pool, size_t uncompressed_buffer_size);
 
   /**
-   * @brief Get the raw hipcompStatus_t*
+   * @brief Get the raw arctoStatus_t*
    */
-  hipcompStatus_t* get_status() const;
+  arctoStatus_t* get_status() const;
   
   CompressionConfig(CompressionConfig&& other);
   CompressionConfig(const CompressionConfig& other);
@@ -104,7 +104,7 @@ public: // API
 /**
  * @brief Config used to aggregate information about a particular decompression.
  * 
- * Contains a "PinnedPtrHandle" to an hipcompStatus. After the decompression is complete,
+ * Contains a "PinnedPtrHandle" to an arctoStatus. After the decompression is complete,
  * the user can check the result status which resides in pinned host memory.
  */
 struct DecompressionConfig {
@@ -118,14 +118,14 @@ public: // API
   uint32_t num_chunks;
 
   /**
-   * @brief Construct the config given an hipcompStatus_t memory pool
+   * @brief Construct the config given an arctoStatus_t memory pool
    */
-  DecompressionConfig(PinnedPtrPool<hipcompStatus_t>& pool);
+  DecompressionConfig(PinnedPtrPool<arctoStatus_t>& pool);
 
   /**
-   * @brief Get the hipcompStatus_t*
+   * @brief Get the arctoStatus_t*
    */
-  hipcompStatus_t* get_status() const;
+  arctoStatus_t* get_status() const;
 
   DecompressionConfig(DecompressionConfig&& other);
   DecompressionConfig(const DecompressionConfig& other);
@@ -138,12 +138,12 @@ public: // API
 /**
  * @brief Abstract base class that defines the nvCOMP high level interface
  */
-struct hipcompManagerBase {
+struct arctoManagerBase {
   /**
    * @brief Configure the compression. 
    *
    * This routine computes the size of the required result buffer. The result config also
-   * contains the hipcompStatus* that allows error checking. Synchronizes the device (hipMemcpy)
+   * contains the arctoStatus* that allows error checking. Synchronizes the device (hipMemcpy)
    * 
    * @param decomp_buffer_size The uncompressed input data size.
    * \return comp_config Result
@@ -192,7 +192,7 @@ struct hipcompManagerBase {
    * @param decomp_buffer The location to output the decompressed data to (GPU accessible).
    * @param comp_buffer The compressed input data (GPU accessible).
    * @param decomp_config Resulted from configure_decompression given this decomp_buffer_size.
-   * Contains hipcompStatus* in CPU/GPU-accessible memory to allow error checking.
+   * Contains arctoStatus* in CPU/GPU-accessible memory to allow error checking.
    */
   virtual void decompress(
       uint8_t* decomp_buffer, 
@@ -232,13 +232,13 @@ struct hipcompManagerBase {
    */ 
   virtual size_t get_compressed_output_size(uint8_t* comp_buffer) = 0;
 
-  virtual ~hipcompManagerBase() = default;
+  virtual ~arctoManagerBase() = default;
 };
 
-struct PimplManager : hipcompManagerBase {
+struct PimplManager : arctoManagerBase {
 
 protected:
-  std::unique_ptr<hipcompManagerBase> impl;
+  std::unique_ptr<arctoManagerBase> impl;
 
 public:
   virtual ~PimplManager() {}
@@ -300,4 +300,4 @@ public:
   }
 };
 
-} // namespace hipcomp
+} // namespace arcto

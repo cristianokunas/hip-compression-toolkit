@@ -26,19 +26,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HIPCOMP_BENCHMARKS_BENCHMARK_TEMPLATE_CHUNKED_CUH
-#define HIPCOMP_BENCHMARKS_BENCHMARK_TEMPLATE_CHUNKED_CUH
+#ifndef ARCTO_BENCHMARKS_BENCHMARK_TEMPLATE_CHUNKED_CUH
+#define ARCTO_BENCHMARKS_BENCHMARK_TEMPLATE_CHUNKED_CUH
 
 #include "benchmark_common.h"
 
 #ifdef __HIP_PLATFORM_AMD__
-#include "hipcomp.h"
-#include "hipcomp/lz4.h"
-#include "hipcomp/snappy.h"
-#include "hipcomp/cascaded.h"
-#include "hipcomp/gdeflate.h"
-#include "hipcomp/bitcomp.h"
-#include "hipcomp/ans.h"
+#include "arcto.h"
+#include "arcto/lz4.h"
+#include "arcto/snappy.h"
+#include "arcto/cascaded.h"
+#include "arcto/gdeflate.h"
+#include "arcto/bitcomp.h"
+#include "arcto/ans.h"
 #else
 #include "nvcomp.h"
 #include "nvcomp/lz4.h"
@@ -77,7 +77,7 @@
 #define gpuMemcpyHostToDevice hipMemcpyHostToDevice
 #define gpuMemcpyDeviceToHost hipMemcpyDeviceToHost
 #define gpuSetDevice hipSetDevice
-// Note: hipcomp uses C API without namespaces
+// Note: arcto uses C API without namespaces
 #else
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
@@ -416,13 +416,13 @@ run_benchmark_template(
   double decomp_time = 0.0;
   for (size_t iter = 0; iter < count; ++iter) {
     // compression
-    hipcompStatus_t status;
+    arctoStatus_t status;
 
     // Compress on the GPU using batched API
     size_t comp_temp_bytes;
     status = BatchedCompressGetTempSize(
         batch_size, chunk_size, format_opts, &comp_temp_bytes);
-    benchmark::benchmark_assert(status == hipcompSuccess,
+    benchmark::benchmark_assert(status == arctoSuccess,
         "BatchedCompressGetTempSize() failed.");
 
     void* d_comp_temp;
@@ -431,7 +431,7 @@ run_benchmark_template(
     size_t max_out_bytes;
     status = BatchedCompressGetMaxOutputChunkSize(
         chunk_size, format_opts, &max_out_bytes);
-    benchmark::benchmark_assert(status == hipcompSuccess,
+    benchmark::benchmark_assert(status == arctoSuccess,
         "BatchedGetMaxOutputChunkSize() failed.");
 
     BatchData compress_data(max_out_bytes, batch_size);
@@ -452,7 +452,7 @@ run_benchmark_template(
         compress_data.sizes(),
         format_opts,
         stream);
-    benchmark::benchmark_assert(status == hipcompSuccess,
+    benchmark::benchmark_assert(status == arctoSuccess,
         "BatchedCompressAsync() failed.");
 
     GPU_CHECK(hipEventRecord(end, stream));
@@ -481,7 +481,7 @@ run_benchmark_template(
     size_t decomp_temp_bytes;
     status = BatchedDecompressGetTempSize(
         compress_data.size(), chunk_size, &decomp_temp_bytes);
-    benchmark::benchmark_assert(status == hipcompSuccess,
+    benchmark::benchmark_assert(status == arctoSuccess,
         "BatchedDecompressGetTempSize() failed.");
 
     void* d_decomp_temp;
@@ -491,7 +491,7 @@ run_benchmark_template(
     GPU_CHECK(hipMalloc(
         (void**)&d_decomp_sizes, batch_size*sizeof(*d_decomp_sizes)));
 
-    hipcompStatus_t* d_decomp_statuses;
+    arctoStatus_t* d_decomp_statuses;
     GPU_CHECK(hipMalloc(
         (void**)&d_decomp_statuses, batch_size*sizeof(*d_decomp_statuses)));
 
@@ -518,7 +518,7 @@ run_benchmark_template(
         d_decomp_statuses,
         stream);
     benchmark::benchmark_assert(
-        status == hipcompSuccess,
+        status == arctoSuccess,
         "BatchedDecompressAsync() not successful");
 
     GPU_CHECK(hipEventRecord(end, stream));
@@ -536,11 +536,11 @@ run_benchmark_template(
     GPU_CHECK(hipMemcpy(h_decomp_sizes.data(), d_decomp_sizes,
       sizeof(*d_decomp_sizes)*batch_size, hipMemcpyDeviceToHost));
 
-    std::vector<hipcompStatus_t> h_decomp_statuses(batch_size);
+    std::vector<arctoStatus_t> h_decomp_statuses(batch_size);
     GPU_CHECK(hipMemcpy(h_decomp_statuses.data(), d_decomp_statuses,
       sizeof(*d_decomp_statuses)*batch_size, hipMemcpyDeviceToHost));
     for (size_t i = 0; i < batch_size; ++i) {
-      benchmark::benchmark_assert(h_decomp_statuses[i] == hipcompSuccess, "Batch item not successfuly decompressed: i=" + std::to_string(i) + ": status=" +
+      benchmark::benchmark_assert(h_decomp_statuses[i] == arctoSuccess, "Batch item not successfuly decompressed: i=" + std::to_string(i) + ": status=" +
       std::to_string(h_decomp_statuses[i]));
       benchmark::benchmark_assert(h_decomp_sizes[i] == h_input_sizes[i], "Batch item of wrong size: i=" + std::to_string(i) + ": act_size=" +
       std::to_string(h_decomp_sizes[i]) + " exp_size=" +

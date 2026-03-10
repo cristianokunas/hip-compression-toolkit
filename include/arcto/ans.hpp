@@ -51,9 +51,9 @@
 
 #include <memory>
 
-#include "hipcompManager.hpp"
+#include "arctoManager.hpp"
 
-namespace hipcomp {
+namespace arcto {
 
 struct ANSFormatSpecHeader {
   // Empty for now
@@ -66,4 +66,4 @@ struct ANSManager : PimplManager {
   ~ANSManager();
 };
 
-} // namespace hipcomp
+} // namespace arcto

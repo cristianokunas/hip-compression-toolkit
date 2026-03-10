@@ -47,18 +47,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef HIPCOMP_API_HPP
-#define HIPCOMP_API_HPP
+#ifndef ARCTO_API_HPP
+#define ARCTO_API_HPP
 
-#include "hipcomp.h"
-#include "hipcomp/lz4.h"
+#include "arcto.h"
+#include "arcto/lz4.h"
 
 #include <cstdint>
 #include <hip/hip_runtime.h>
 #include <stdexcept>
 #include <string>
 
-namespace hipcomp
+namespace arcto
 {
 
 /******************************************************************************
@@ -66,31 +66,31 @@ namespace hipcomp
  *****************************************************************************/
 
 /**
- * @brief The top-level exception throw by hipcomp C++ methods.
+ * @brief The top-level exception throw by arcto C++ methods.
  */
-class HipCompException : public std::runtime_error
+class ArctoException : public std::runtime_error
 {
 public:
   /**
-   * @brief Create a new HipCompException.
+   * @brief Create a new ArctoException.
    *
    * @param err The error associated with the exception.
    * @param msg The error message.
    */
-  HipCompException(hipcompStatus_t err, const std::string& msg) :
+  ArctoException(arctoStatus_t err, const std::string& msg) :
       std::runtime_error(msg + " : code=" + std::to_string(err) + "."),
       m_err(err)
   {
     // do nothing
   }
 
-  hipcompStatus_t get_error() const
+  arctoStatus_t get_error() const
   {
     return m_err;
   }
 
 private:
-  hipcompStatus_t m_err;
+  arctoStatus_t m_err;
 };
 
 /**
@@ -120,7 +120,7 @@ public:
    * and the size of the compressed data on output.
    * @param stream The stream to operate on.
    *
-   * @throw HipCompException If compression fails to launch on the stream.
+   * @throw ArctoException If compression fails to launch on the stream.
    */
   virtual void compress_async(
       const void* in_ptr,
@@ -167,38 +167,38 @@ public:
  *****************************************************************************/
 
 template <typename T>
-inline hipcompType_t TypeOf()
+inline arctoType_t TypeOf()
 {
   if (std::is_same<T, int8_t>::value) {
-    return HIPCOMP_TYPE_CHAR;
+    return ARCTO_TYPE_CHAR;
   } else if (std::is_same<T, uint8_t>::value) {
-    return HIPCOMP_TYPE_UCHAR;
+    return ARCTO_TYPE_UCHAR;
   } else if (std::is_same<T, int16_t>::value) {
-    return HIPCOMP_TYPE_SHORT;
+    return ARCTO_TYPE_SHORT;
   } else if (std::is_same<T, uint16_t>::value) {
-    return HIPCOMP_TYPE_USHORT;
+    return ARCTO_TYPE_USHORT;
   } else if (std::is_same<T, int32_t>::value) {
-    return HIPCOMP_TYPE_INT;
+    return ARCTO_TYPE_INT;
   } else if (std::is_same<T, uint32_t>::value) {
-    return HIPCOMP_TYPE_UINT;
+    return ARCTO_TYPE_UINT;
   } else if (std::is_same<T, int64_t>::value) {
-    return HIPCOMP_TYPE_LONGLONG;
+    return ARCTO_TYPE_LONGLONG;
   } else if (std::is_same<T, uint64_t>::value) {
-    return HIPCOMP_TYPE_ULONGLONG;
+    return ARCTO_TYPE_ULONGLONG;
   } else {
-    throw HipCompException(
-        hipcompErrorNotSupported, "hipcomp does not support the given type.");
+    throw ArctoException(
+        arctoErrorNotSupported, "arcto does not support the given type.");
   }
 }
 
-inline void throwExceptionIfError(hipcompStatus_t error, const std::string& msg)
+inline void throwExceptionIfError(arctoStatus_t error, const std::string& msg)
 {
-  if (error != hipcompSuccess) {
-    throw HipCompException(error, msg);
+  if (error != arctoSuccess) {
+    throw ArctoException(error, msg);
   }
 }
 
 
-} // namespace hipcomp
+} // namespace arcto
 
 #endif

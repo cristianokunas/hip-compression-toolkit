@@ -49,27 +49,27 @@
 
 #include <assert.h>
 
-#include "hipcomp.hpp"
-#include "hipcomp/hipcompManager.hpp"
-#include "hipcomp/ans.hpp"
-#include "hipcomp/lz4.hpp"
-#include "hipcomp/snappy.hpp"
-#include "hipcomp/gdeflate.hpp"
-#include "hipcomp/cascaded.hpp"
-#include "hipcomp/bitcomp.hpp"
-#include "hipcomp_common_deps/hlif_shared_types.hpp"
+#include "arcto.hpp"
+#include "arcto/arctoManager.hpp"
+#include "arcto/ans.hpp"
+#include "arcto/lz4.hpp"
+#include "arcto/snappy.hpp"
+#include "arcto/gdeflate.hpp"
+#include "arcto/cascaded.hpp"
+#include "arcto/bitcomp.hpp"
+#include "arcto_common_deps/hlif_shared_types.hpp"
 #include "HipUtils.h"
 
-namespace hipcomp {
+namespace arcto {
 
-std::shared_ptr<hipcompManagerBase> create_manager(const uint8_t* comp_buffer, hipStream_t stream = 0, const int device_id = 0) {
+std::shared_ptr<arctoManagerBase> create_manager(const uint8_t* comp_buffer, hipStream_t stream = 0, const int device_id = 0) {
   // Need to determine the type of manager
   const CommonHeader* common_header = reinterpret_cast<const CommonHeader*>(comp_buffer);
   CommonHeader cpu_common_header;
   HipUtils::check(hipMemcpyAsync(&cpu_common_header, common_header, sizeof(CommonHeader), hipMemcpyDefault, stream));
   HipUtils::check(hipStreamSynchronize(stream));
 
-  std::shared_ptr<hipcompManagerBase> res;
+  std::shared_ptr<arctoManagerBase> res;
 
   switch(cpu_common_header.format) {
     case FormatType::LZ4: 
@@ -94,9 +94,9 @@ std::shared_ptr<hipcompManagerBase> create_manager(const uint8_t* comp_buffer, h
     }
     case FormatType::GDeflate: 
     {
-      hipcompBatchedGdeflateOpts_t format_spec;
-      const hipcompBatchedGdeflateOpts_t* gpu_format_header = reinterpret_cast<const hipcompBatchedGdeflateOpts_t*>(comp_buffer + sizeof(CommonHeader));
-      HipUtils::check(hipMemcpyAsync(&format_spec, gpu_format_header, sizeof(hipcompBatchedGdeflateOpts_t), hipMemcpyDefault, stream));
+      arctoBatchedGdeflateOpts_t format_spec;
+      const arctoBatchedGdeflateOpts_t* gpu_format_header = reinterpret_cast<const arctoBatchedGdeflateOpts_t*>(comp_buffer + sizeof(CommonHeader));
+      HipUtils::check(hipMemcpyAsync(&format_spec, gpu_format_header, sizeof(arctoBatchedGdeflateOpts_t), hipMemcpyDefault, stream));
       HipUtils::check(hipStreamSynchronize(stream));
 
       res = std::make_shared<GdeflateManager>(cpu_common_header.uncomp_chunk_size, format_spec.algo, stream, device_id);
@@ -112,7 +112,7 @@ std::shared_ptr<hipcompManagerBase> create_manager(const uint8_t* comp_buffer, h
 
       res = std::make_shared<BitcompManager>(format_spec.data_type, format_spec.algo, stream, device_id);
 #else
-      throw HipCompException(hipcompErrorNotSupported, "Bitcomp support not available in this build.");
+      throw ArctoException(arctoErrorNotSupported, "Bitcomp support not available in this build.");
 #endif
       break;
     }
@@ -147,5 +147,5 @@ std::shared_ptr<hipcompManagerBase> create_manager(const uint8_t* comp_buffer, h
   return res;
 }
 
-} // namespace hipcomp 
+} // namespace arcto 
  

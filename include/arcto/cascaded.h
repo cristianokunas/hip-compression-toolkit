@@ -47,10 +47,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef HIPCOMP_CASCADED_H
-#define HIPCOMP_CASCADED_H
+#ifndef ARCTO_CASCADED_H
+#define ARCTO_CASCADED_H
 
-#include "hipcomp.h"
+#include "arcto.h"
 
 #include <hip/hip_runtime.h>
 #include <stdint.h>
@@ -78,7 +78,7 @@ typedef struct
    * @brief Whether or not to bitpack the final layers.
    */
   int use_bp;
-} hipcompCascadedFormatOpts;
+} arctoCascadedFormatOpts;
 
 /******************************************************************************
  * Batched compression/decompression interface
@@ -102,7 +102,7 @@ typedef struct
   /**
    * @brief The datatype used to define the bit-width for compression
    */
-  hipcompType_t type;
+  arctoType_t type;
 
   /**
    * @brief The number of Run Length Encodings to perform.
@@ -118,11 +118,11 @@ typedef struct
    * @brief Whether or not to bitpack the final layers.
    */
   int use_bp;
-} hipcompBatchedCascadedOpts_t;
+} arctoBatchedCascadedOpts_t;
 
 // Default options for batched compression
-static const hipcompBatchedCascadedOpts_t hipcompBatchedCascadedDefaultOpts
-    = {4096, HIPCOMP_TYPE_INT, 2, 1, 1};
+static const arctoBatchedCascadedOpts_t arctoBatchedCascadedDefaultOpts
+    = {4096, ARCTO_TYPE_INT, 2, 1, 1};
 
 /**
  * @brief Get temporary space required for compression.
@@ -137,18 +137,18 @@ static const hipcompBatchedCascadedOpts_t hipcompBatchedCascadedDefaultOpts
  * @param temp_bytes The size of the required GPU workspace for compression
  * (output).
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedCascadedCompressGetTempSize(
+arctoStatus_t arctoBatchedCascadedCompressGetTempSize(
     size_t batch_size,
     size_t max_uncompressed_chunk_bytes,
-    hipcompBatchedCascadedOpts_t format_opts,
+    arctoBatchedCascadedOpts_t format_opts,
     size_t* temp_bytes);
 
 /**
  * @brief Get the maximum size any chunk could compress to in the batch. That
  * is, the minimum amount of output memory required to be given
- * hipcompBatchedCascadedCompressAsync() for each batch item.
+ * arctoBatchedCascadedCompressAsync() for each batch item.
  *
  * Chunk size must be limited by the shared memory available on the GPU
  * being used.  In general, it must not exceed 16384, but 4096 bytes is
@@ -159,17 +159,17 @@ hipcompStatus_t hipcompBatchedCascadedCompressGetTempSize(
  * @param max_compressed_byes The maximum compressed size of the largest chunk
  * (output).
  *
- * @return The hipcompSuccess unless there is an error.
+ * @return The arctoSuccess unless there is an error.
  */
-hipcompStatus_t hipcompBatchedCascadedCompressGetMaxOutputChunkSize(
+arctoStatus_t arctoBatchedCascadedCompressGetMaxOutputChunkSize(
     size_t max_uncompressed_chunk_bytes,
-    hipcompBatchedCascadedOpts_t format_opts,
+    arctoBatchedCascadedOpts_t format_opts,
     size_t* max_compressed_bytes);
 
 /**
  * @brief Perform batched asynchronous compression.
  *
- * NOTE: Unlike `hipcompCascadedCompressAsync`, a valid compression format must
+ * NOTE: Unlike `arctoCascadedCompressAsync`, a valid compression format must
  * be supplied to `format_opts`.
  *
  * NOTE: The current implementation does not support uncompressed size larger
@@ -196,9 +196,9 @@ hipcompStatus_t hipcompBatchedCascadedCompressGetMaxOutputChunkSize(
  * @param[in] format_opts The cascaded format options. The format must be valid.
  * @param[in] stream The hip stream to operate on.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedCascadedCompressAsync(
+arctoStatus_t arctoBatchedCascadedCompressAsync(
     const void* const* device_uncompressed_ptrs,
     const size_t* device_uncompressed_bytes,
     size_t max_uncompressed_chunk_bytes, // not used
@@ -207,7 +207,7 @@ hipcompStatus_t hipcompBatchedCascadedCompressAsync(
     size_t temp_bytes,     // not used
     void* const* device_compressed_ptrs,
     size_t* device_compressed_bytes,
-    const hipcompBatchedCascadedOpts_t format_opts,
+    const arctoBatchedCascadedOpts_t format_opts,
     hipStream_t stream);
 
 /**
@@ -219,17 +219,17 @@ hipcompStatus_t hipcompBatchedCascadedCompressAsync(
  * @param temp_bytes The amount of temporary GPU space that will be required to
  * decompress.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedCascadedDecompressGetTempSize(
+arctoStatus_t arctoBatchedCascadedDecompressGetTempSize(
     size_t num_chunks, size_t max_uncompressed_chunk_bytes, size_t* temp_bytes);
 
 /**
  * @brief Perform batched asynchronous decompression.
  *
  * NOTE: This function is used to decompress compressed buffers produced by
- * `hipcompBatchedCascadedCompressAsync`. Currently it is not compatible with
- * compressed buffers produced by `hipcompCascadedCompressAsync`.
+ * `arctoBatchedCascadedCompressAsync`. Currently it is not compatible with
+ * compressed buffers produced by `arctoCascadedCompressAsync`.
  *
  * @param[in] device_compressed_ptrs Array with size \p batch_size of pointers
  * in device-accessible memory to compressed buffers. Each compressed buffer
@@ -241,7 +241,7 @@ hipcompStatus_t hipcompBatchedCascadedDecompressGetTempSize(
  * buffers in bytes. The sizes should reside in device-accessible memory. If the
  * size is not large enough to hold all decompressed elements, the decompressor
  * will set the status specified in \p device_statuses corresponding to the
- * overflow partition to `hipcompErrorCannotDecompress`.
+ * overflow partition to `arctoErrorCannotDecompress`.
  * @param[out] device_actual_uncompressed_bytes Array with size \p batch_size of
  * the actual number of bytes decompressed for every partitions. This argument
  * needs to be preallocated.
@@ -255,12 +255,12 @@ hipcompStatus_t hipcompBatchedCascadedDecompressGetTempSize(
  * @param[out] device_statuses Array with size \p batch_size of statuses in
  * device-accessible memory. This argument needs to be preallocated. For each
  * partition, if the decompression is successful, the status will be set to
- * `hipcompSuccess`. If the decompression is not successful, for example due to
+ * `arctoSuccess`. If the decompression is not successful, for example due to
  * the corrupted input or out-of-bound errors, the status will be set to
- * `hipcompErrorCannotDecompress`.
+ * `arctoErrorCannotDecompress`.
  * @param[in] stream The hip stream to operate on.
  */
-hipcompStatus_t hipcompBatchedCascadedDecompressAsync(
+arctoStatus_t arctoBatchedCascadedDecompressAsync(
     const void* const* device_compressed_ptrs,
     const size_t* device_compressed_bytes,
     const size_t* device_uncompressed_bytes,
@@ -269,7 +269,7 @@ hipcompStatus_t hipcompBatchedCascadedDecompressAsync(
     void* const device_temp_ptr, // not used
     size_t temp_bytes,           // not used
     void* const* device_uncompressed_ptrs,
-    hipcompStatus_t* device_statuses,
+    arctoStatus_t* device_statuses,
     hipStream_t stream);
 
 /**
@@ -287,7 +287,7 @@ hipcompStatus_t hipcompBatchedCascadedDecompressAsync(
  * @param[in] batch_size Number of partitions to check sizes.
  * @param[in] stream The hip stream to operate on.
  */
-hipcompStatus_t hipcompBatchedCascadedGetDecompressSizeAsync(
+arctoStatus_t arctoBatchedCascadedGetDecompressSizeAsync(
     const void* const* device_compressed_ptrs,
     const size_t* device_compressed_bytes,
     size_t* device_uncompressed_bytes,

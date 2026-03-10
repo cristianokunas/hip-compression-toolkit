@@ -49,7 +49,7 @@ foreach(BENCHMARK_SOURCE ${BENCHMARK_SOURCES})
     )
     target_link_libraries(${BENCHMARK_NAME}
       PRIVATE
-        hipcomp
+        arcto
     )
     set_target_properties(${BENCHMARK_NAME} PROPERTIES
       CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
@@ -69,7 +69,7 @@ foreach(BENCHMARK_SOURCE ${BENCHMARK_SOURCES})
     )
     target_link_libraries(${BENCHMARK_NAME}
       PRIVATE
-        hipcomp
+        arcto
         hip::host
     )
     set_target_properties(${BENCHMARK_NAME} PROPERTIES

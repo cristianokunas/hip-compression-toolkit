@@ -49,18 +49,21 @@
 
 #pragma once
 
-typedef enum hipcompStatus_t
-{
-  hipcompSuccess = 0,
-  hipcompErrorInvalidValue = 10,
-  hipcompErrorNotSupported = 11,
-  hipcompErrorCannotDecompress = 12,
-  hipcompErrorCudaError = 1000,
-  hipcompErrorInternal = 10000,
-  nvcompSuccess = hipcompSuccess,
-  nvcompErrorInvalidValue = hipcompErrorInvalidValue,
-  nvcompErrorNotSupported = hipcompErrorNotSupported,
-  nvcompErrorCannotDecompress = hipcompErrorCannotDecompress,
-  nvcompErrorCudaError = hipcompErrorCudaError,
-  nvcompErrorInternal = hipcompErrorInternal,
-} hipcompStatus_t;
+#include <memory>
+
+#include "arctoManager.hpp"
+
+namespace arcto {
+
+struct SnappyFormatSpecHeader {
+  // Empty for now
+};
+
+struct SnappyManager : PimplManager {
+
+  SnappyManager(size_t uncomp_chunk_size, hipStream_t user_stream = 0, int device_id = 0);
+
+  ~SnappyManager();
+};
+
+} // namespace arcto

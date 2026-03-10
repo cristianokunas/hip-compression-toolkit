@@ -47,10 +47,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef HIPCOMP_BITCOMP_H
-#define HIPCOMP_BITCOMP_H
+#ifndef ARCTO_BITCOMP_H
+#define ARCTO_BITCOMP_H
 
-#include "hipcomp.h"
+#include "arcto.h"
 
 #include <hip/hip_runtime.h>
 #include <stdint.h>
@@ -72,9 +72,9 @@ typedef struct
    *        and is usually a faster than the default algorithm.
    */
   int algorithm_type;
-} hipcompBitcompFormatOpts;
+} arctoBitcompFormatOpts;
 
-static const hipcompBitcompFormatOpts hipcompBitcompDefaultOpts = {0};
+static const arctoBitcompFormatOpts arctoBitcompDefaultOpts = {0};
 
 /**
  * @brief Get the temporary workspace size required to perform compression.
@@ -88,11 +88,11 @@ static const hipcompBitcompFormatOpts hipcompBitcompDefaultOpts = {0};
  * @param max_compressed_bytes The maximum size of the compressed data
  * (output).
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBitcompCompressConfigure(
-    const hipcompBitcompFormatOpts* opts,
-    hipcompType_t in_type,
+arctoStatus_t arctoBitcompCompressConfigure(
+    const arctoBitcompFormatOpts* opts,
+    arctoType_t in_type,
     size_t in_bytes,
     size_t* metadata_bytes,
     size_t* temp_bytes,
@@ -114,11 +114,11 @@ hipcompStatus_t hipcompBitcompCompressConfigure(
  * be GPU accessible.
  * @param stream The hip stream to operate on.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBitcompCompressAsync(
-    const hipcompBitcompFormatOpts* format_opts,
-    hipcompType_t in_type,
+arctoStatus_t arctoBitcompCompressAsync(
+    const arctoBitcompFormatOpts* format_opts,
+    arctoType_t in_type,
     const void* uncompressed_ptr,
     size_t uncompressed_bytes,
     void* temp_ptr,
@@ -141,9 +141,9 @@ hipcompStatus_t hipcompBitcompCompressAsync(
  * @param uncompressed_bytes The size the data will decompress to (output).
  * @param stream The stream to use for copying from the device to the host.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBitcompDecompressConfigure(
+arctoStatus_t arctoBitcompDecompressConfigure(
     const void* compressed_ptr,
     size_t compressed_bytes,
     void** metadata_ptr,
@@ -157,7 +157,7 @@ hipcompStatus_t hipcompBitcompDecompressConfigure(
  *
  * @param metadata_ptr The pointer to destroy.
  */
-void hipcompBitcompDestroyMetadata(void* metadata_ptr);
+void arctoBitcompDestroyMetadata(void* metadata_ptr);
 
 /**
  * @brief Perform the asynchronous decompression.
@@ -173,9 +173,9 @@ void hipcompBitcompDestroyMetadata(void* metadata_ptr);
  * @param uncompressed_bytes The size of the output location.
  * @param stream The hip stream to operate on.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBitcompDecompressAsync(
+arctoStatus_t arctoBitcompDecompressAsync(
     const void* compressed_ptr,
     size_t compressed_bytes,
     void* metadata_ptr,
@@ -194,7 +194,7 @@ hipcompStatus_t hipcompBitcompDecompressAsync(
  *
  * @return 1 if the data was compressed with bitcomp, 0 otherwise
  */
-int hipcompIsBitcompData(const void* const in_ptr, size_t in_bytes);
+int arctoIsBitcompData(const void* const in_ptr, size_t in_bytes);
 
 /******************************************************************************
  * Batched compression/decompression interface
@@ -211,37 +211,37 @@ typedef struct
    *    0 : Default algorithm, usually gives the best compression ratios
    *    1 : "Sparse" algorithm, works well on sparse data (with lots of zeroes).
    *        and is usually a faster than the default algorithm.
-   *  data_type is one of hipcomp's possible data types
+   *  data_type is one of arcto's possible data types
    */
   int algorithm_type;
-  hipcompType_t data_type;
-} hipcompBatchedBitcompFormatOpts;
+  arctoType_t data_type;
+} arctoBatchedBitcompFormatOpts;
 
-static const hipcompBatchedBitcompFormatOpts hipcompBatchedBitcompDefaultOpts
-    = {0, HIPCOMP_TYPE_UCHAR};
+static const arctoBatchedBitcompFormatOpts arctoBatchedBitcompDefaultOpts
+    = {0, ARCTO_TYPE_UCHAR};
 
 /**
  * @brief Get the maximum size any chunk could compress to in the batch. That
  * is, the minimum amount of output memory required to be given
- * hipcompBatchedSnappyCompressAsync() for each batch item.
+ * arctoBatchedSnappyCompressAsync() for each batch item.
  *
  * @param max_chunk_size The maximum size of a chunk in the batch.
  * @param format_ops Snappy compression options.
  * @param max_compressed_size The maximum compressed size of the largest chunk
  * (output).
  *
- * @return The hipcompSuccess unless there is an error.
+ * @return The arctoSuccess unless there is an error.
  */
-hipcompStatus_t hipcompBatchedBitcompCompressGetMaxOutputChunkSize(
+arctoStatus_t arctoBatchedBitcompCompressGetMaxOutputChunkSize(
     size_t max_chunk_size,
-    hipcompBatchedBitcompFormatOpts format_opts,
+    arctoBatchedBitcompFormatOpts format_opts,
     size_t* max_compressed_size);
 /**
  * @brief Perform batched asynchronous compression.
  *
  * NOTE: The maximum number of batch partitions is 2^31.
  * 
- * NOTE: Unlike `hipcompBitcompCompressAsync`, a valid compression format must
+ * NOTE: Unlike `arctoBitcompCompressAsync`, a valid compression format must
  * be supplied to `format_opts`.
  *
  * @param[in] device_uncompressed_ptrs Array with size \p batch_size of pointers
@@ -265,9 +265,9 @@ hipcompStatus_t hipcompBatchedBitcompCompressGetMaxOutputChunkSize(
  * @param[in] type The data type of the uncompressed data.
  * @param[in] stream The hip stream to operate on.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedBitcompCompressAsync(
+arctoStatus_t arctoBatchedBitcompCompressAsync(
     const void* const* device_uncompressed_ptrs,
     const size_t* device_uncompressed_bytes,
     size_t max_uncompressed_chunk_bytes, // not used
@@ -276,15 +276,15 @@ hipcompStatus_t hipcompBatchedBitcompCompressAsync(
     size_t temp_bytes,     // not used
     void* const* device_compressed_ptrs,
     size_t* device_compressed_bytes,
-    const hipcompBatchedBitcompFormatOpts format_opts,
+    const arctoBatchedBitcompFormatOpts format_opts,
     hipStream_t stream);
 
 /**
  * @brief Perform batched asynchronous decompression.
  *
  * NOTE: This function is used to decompress compressed buffers produced by
- * `hipcompBatchedBitcompCompressAsync`. It can also decompress buffers
- * compressed with `hipcompBitcompCompressAsync` or the standalone Bitcomp library.
+ * `arctoBatchedBitcompCompressAsync`. It can also decompress buffers
+ * compressed with `arctoBitcompCompressAsync` or the standalone Bitcomp library.
  * 
  * NOTE: The function is not completely asynchronous, as it needs to look
  * at the compressed data in order to create the proper bitcomp handle.
@@ -300,7 +300,7 @@ hipcompStatus_t hipcompBatchedBitcompCompressAsync(
  * buffers in bytes. The sizes should reside in device-accessible memory. If the
  * size is not large enough to hold all decompressed elements, the decompressor
  * will set the status specified in \p device_statuses corresponding to the
- * overflow partition to `hipcompErrorCannotDecompress`.
+ * overflow partition to `arctoErrorCannotDecompress`.
  * @param[out] device_actual_uncompressed_bytes Array with size \p batch_size of
  * the actual number of bytes decompressed for every partitions. This argument
  * needs to be preallocated.
@@ -311,12 +311,12 @@ hipcompStatus_t hipcompBatchedBitcompCompressAsync(
  * @param[out] device_statuses Array with size \p batch_size of statuses in
  * device-accessible memory. This argument needs to be preallocated. For each
  * partition, if the decompression is successful, the status will be set to
- * `hipcompSuccess`. If the decompression is not successful, for example due to
+ * `arctoSuccess`. If the decompression is not successful, for example due to
  * the corrupted input or out-of-bound errors, the status will be set to
- * `hipcompErrorCannotDecompress`.
+ * `arctoErrorCannotDecompress`.
  * @param[in] stream The hip stream to operate on.
  */
-hipcompStatus_t hipcompBatchedBitcompDecompressAsync(
+arctoStatus_t arctoBatchedBitcompDecompressAsync(
     const void* const* device_compressed_ptrs,
     const size_t* device_compressed_bytes, // not used
     const size_t* device_uncompressed_bytes,
@@ -325,7 +325,7 @@ hipcompStatus_t hipcompBatchedBitcompDecompressAsync(
     void* const device_temp_ptr, // not used
     size_t temp_bytes,           // not used
     void* const* device_uncompressed_ptrs,
-    hipcompStatus_t* device_statuses,
+    arctoStatus_t* device_statuses,
     hipStream_t stream);
 
 /**
@@ -342,7 +342,7 @@ hipcompStatus_t hipcompBatchedBitcompDecompressAsync(
  * @param[in] batch_size Number of partitions to check sizes.
  * @param[in] stream The hip stream to operate on.
  */
-hipcompStatus_t hipcompBatchedBitcompGetDecompressSizeAsync(
+arctoStatus_t arctoBatchedBitcompGetDecompressSizeAsync(
     const void* const* device_compressed_ptrs,
     const size_t* device_compressed_bytes,
     size_t* device_uncompressed_bytes,
@@ -358,10 +358,10 @@ hipcompStatus_t hipcompBatchedBitcompGetDecompressSizeAsync(
  * @param[in] format_opts Bitcomp options
  * @param[out] temp_bytes The temp size
  */
-hipcompStatus_t hipcompBatchedBitcompCompressGetTempSize(
+arctoStatus_t arctoBatchedBitcompCompressGetTempSize(
     size_t batch_size,
     size_t max_chunk_bytes,
-    hipcompBatchedBitcompFormatOpts format_opts,
+    arctoBatchedBitcompFormatOpts format_opts,
     size_t * temp_bytes);
 
 /**
@@ -373,7 +373,7 @@ hipcompStatus_t hipcompBatchedBitcompCompressGetTempSize(
  * @param[in] format_opts Bitcomp options
  * @param[out] temp_bytes The temp size
  */
-hipcompStatus_t hipcompBatchedBitcompDecompressGetTempSize(
+arctoStatus_t arctoBatchedBitcompDecompressGetTempSize(
     size_t batch_size,
     size_t max_chunk_bytes,
     size_t * temp_bytes);

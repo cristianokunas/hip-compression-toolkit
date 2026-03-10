@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,22 +47,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "cascaded.h"
-#include "hipcompManager.hpp"
+#pragma once
 
-namespace hipcomp {
+#include <cassert>
 
-struct CascadedFormatSpecHeader {
-  hipcompBatchedCascadedOpts_t options;
-};
+#include "arctoManager.hpp"
+#include "ans.hpp"
+#include "gdeflate.hpp"
+#include "lz4.hpp"
+#include "snappy.hpp"
+#include "bitcomp.hpp"
+#include "cascaded.hpp"
 
-struct CascadedManager : PimplManager {
-  CascadedManager(
-      const hipcompBatchedCascadedOpts_t& options = hipcompBatchedCascadedDefaultOpts,
-      hipStream_t user_stream = 0,
-      int device_id = 0);
+namespace arcto {
 
-  virtual ~CascadedManager();
-};
+/** 
+ * @brief Construct a ManagerBase from a buffer
+ * 
+ * This synchronizes the stream
+ * 
+ */ 
+std::shared_ptr<arctoManagerBase> create_manager(const uint8_t* comp_buffer, hipStream_t stream = 0, const int device_id = 0);
 
-} // namespace hipcomp
+} // namespace arcto

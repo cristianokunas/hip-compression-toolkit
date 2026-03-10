@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,26 +47,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include "arctoManager.hpp"
 
-#include <cassert>
+namespace arcto {
 
-#include "hipcompManager.hpp"
-#include "ans.hpp"
-#include "gdeflate.hpp"
-#include "lz4.hpp"
-#include "snappy.hpp"
-#include "bitcomp.hpp"
-#include "cascaded.hpp"
+struct BitcompFormatSpecHeader {
+  arctoType_t data_type;
+  int algo;
+};
 
-namespace hipcomp {
+struct BitcompManager : PimplManager {
 
-/** 
- * @brief Construct a ManagerBase from a buffer
- * 
- * This synchronizes the stream
- * 
- */ 
-std::shared_ptr<hipcompManagerBase> create_manager(const uint8_t* comp_buffer, hipStream_t stream = 0, const int device_id = 0);
+  BitcompManager(arctoType_t data_type, int bitcomp_algo = 0, hipStream_t user_stream = 0, const int device_id = 0);
 
-} // namespace hipcomp
+  ~BitcompManager();
+};
+
+} // namespace arcto

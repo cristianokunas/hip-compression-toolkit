@@ -47,20 +47,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "hipcompManager.hpp"
+#include "cascaded.h"
+#include "arctoManager.hpp"
 
-namespace hipcomp {
+namespace arcto {
 
-struct BitcompFormatSpecHeader {
-  hipcompType_t data_type;
-  int algo;
+struct CascadedFormatSpecHeader {
+  arctoBatchedCascadedOpts_t options;
 };
 
-struct BitcompManager : PimplManager {
+struct CascadedManager : PimplManager {
+  CascadedManager(
+      const arctoBatchedCascadedOpts_t& options = arctoBatchedCascadedDefaultOpts,
+      hipStream_t user_stream = 0,
+      int device_id = 0);
 
-  BitcompManager(hipcompType_t data_type, int bitcomp_algo = 0, hipStream_t user_stream = 0, const int device_id = 0);
-
-  ~BitcompManager();
+  virtual ~CascadedManager();
 };
 
-} // namespace hipcomp
+} // namespace arcto

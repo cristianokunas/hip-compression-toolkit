@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,16 +47,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "Check.h"
+#pragma once
 
-#include "hipcomp.h"
-#include "hipcomp/cascaded.h"
-#include "hipcomp/lz4.h"
-#include "hipcomp/bitcomp.h"
-
-#include "hipcomp/hipcompManager.hpp"
-#include "hipcomp/hipcompManagerFactory.hpp"
-
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
+typedef enum arctoStatus_t
+{
+  arctoSuccess = 0,
+  arctoErrorInvalidValue = 10,
+  arctoErrorNotSupported = 11,
+  arctoErrorCannotDecompress = 12,
+  arctoErrorCudaError = 1000,
+  arctoErrorInternal = 10000,
+  nvcompSuccess = arctoSuccess,
+  nvcompErrorInvalidValue = arctoErrorInvalidValue,
+  nvcompErrorNotSupported = arctoErrorNotSupported,
+  nvcompErrorCannotDecompress = arctoErrorCannotDecompress,
+  nvcompErrorCudaError = arctoErrorCudaError,
+  nvcompErrorInternal = arctoErrorInternal,
+} arctoStatus_t;

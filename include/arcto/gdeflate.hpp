@@ -51,10 +51,10 @@
 
 #include <memory>
 
-#include "hipcompManager.hpp"
+#include "arctoManager.hpp"
 #include "gdeflate.h"
 
-namespace hipcomp {
+namespace arcto {
 
 struct GdeflateManager : PimplManager {
 
@@ -63,5 +63,5 @@ struct GdeflateManager : PimplManager {
   ~GdeflateManager();
 };
 
-} // namespace hipcomp
+} // namespace arcto
 

@@ -47,10 +47,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef HIPCOMP_GDEFLATE_H
-#define HIPCOMP_GDEFLATE_H
+#ifndef ARCTO_LZ4_H
+#define ARCTO_LZ4_H
 
-#include "hipcomp.h"
+#include "arcto.h"
 
 #include <hip/hip_runtime.h>
 #include <stdint.h>
@@ -59,80 +59,90 @@
 extern "C" {
 #endif
 
-/******************************************************************************
- * Batched compression/decompression interface for gdeflate
- *****************************************************************************/
-
 /**
- * GDeflate compression options for the low-level API
+ * @brief Structure for configuring LZ4 compression.
  */
 typedef struct
 {
-/**
- * Compression algorithm to use. Permitted values are:
- * 0 : high-throughput, low compression ratio (default)
- * 1 : low-throughput, high compression ratio
- * 2 : highest-throughput, entropy-only compression (use for symmetric compression/decompression performance)
- */
-  int algo;
-} hipcompBatchedGdeflateOpts_t;
+  /**
+   * @brief The size of each chunk of data to decompress indepentently with
+   * LZ4. Must be within the range of [32768, 16777216]. Larger sizes will
+   * result in higher compression, but with decreased parallelism. The
+   * recommended size is 65536.
+   */
+  size_t chunk_size;
+} arctoLZ4FormatOpts;
 
-static const hipcompBatchedGdeflateOpts_t hipcompBatchedGdeflateDefaultOpts = {0};
+/**
+ * LZ4 compression options for the low-level API
+ */
+typedef struct
+{
+  arctoType_t data_type;
+} arctoBatchedLZ4Opts_t;
+
+static const arctoBatchedLZ4Opts_t arctoBatchedLZ4DefaultOpts = {ARCTO_TYPE_CHAR};
+
+/******************************************************************************
+ * Batched compression/decompression interface
+ *****************************************************************************/
 
 /**
  * @brief Get temporary space required for compression.
  *
  * Chunk size must not exceed
- * 65536 bytes. For best performance, a chunk size of 65536 bytes is
+ * 16777216 bytes. For best performance, a chunk size of 65536 bytes is
  * recommended.
  *
  * @param batch_size The number of items in the batch.
  * @param max_uncompressed_chunk_bytes The maximum size of a chunk in the
  * batch.
- * @param format_opts The GDeflate compression options to use.
+ * @param format_opts The LZ4 compression options to use.
  * @param temp_bytes The size of the required GPU workspace for compression
  * (output).
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedGdeflateCompressGetTempSize(
+arctoStatus_t arctoBatchedLZ4CompressGetTempSize(
     size_t batch_size,
     size_t max_uncompressed_chunk_bytes,
-    hipcompBatchedGdeflateOpts_t format_opts,
+    arctoBatchedLZ4Opts_t format_opts,
     size_t* temp_bytes);
 
 /**
  * @brief Get the maximum size any chunk could compress to in the batch. That
  * is, the minimum amount of output memory required to be given
- * hipcompBatchedGdeflateCompressAsync() for each batch item.
+ * arctoBatchedLZ4CompressAsync() for each batch item.
  *
  * Chunk size must not exceed
- * 65536 bytes. For best performance, a chunk size of 65536 bytes is
+ * 16777216 bytes. For best performance, a chunk size of 65536 bytes is
  * recommended.
  *
  * @param max_uncompressed_chunk_bytes The maximum size of a chunk in the batch.
- * @param format_opts The GDeflate compression options to use.
+ * @param format_opts The LZ4 compression options to use.
  * @param max_compressed_byes The maximum compressed size of the largest chunk
  * (output).
  *
- * @return The hipcompSuccess unless there is an error.
+ * @return The arctoSuccess unless there is an error.
  */
-hipcompStatus_t hipcompBatchedGdeflateCompressGetMaxOutputChunkSize(
+arctoStatus_t arctoBatchedLZ4CompressGetMaxOutputChunkSize(
     size_t max_uncompressed_chunk_bytes,
-    hipcompBatchedGdeflateOpts_t format_opts,
+    arctoBatchedLZ4Opts_t format_opts,
     size_t* max_compressed_bytes);
 
 /**
  * @brief Perform compression asynchronously. All pointers must point to GPU
  * accessible locations. The individual chunk size must not exceed
- * 65536 bytes. For best performance, a chunk size of 65536 bytes is
+ * 16777216 bytes. For best performance, a chunk size of 65536 bytes is
  * recommended.
  *
  * @param device_uncompressed_ptrs The pointers on the GPU, to uncompressed batched items.
  * This pointer must be GPU accessible.
  * @param device_uncompressed_bytes The size of each uncompressed batch item on the GPU.
  * @param max_uncompressed_chunk_bytes The maximum size in bytes of the largest
- * chunk in the batch.
+ * chunk in the batch. This parameter is currently unused, so if it is not set
+ * with the maximum size, it should be set to zero. If a future version makes
+ * use of it, it will return an error if it is set to zero.
  * @param batch_size The number of chunks to compress.
  * @param device_temp_ptr The temporary GPU workspace.
  * @param temp_bytes The size of the temporary GPU workspace.
@@ -140,12 +150,12 @@ hipcompStatus_t hipcompBatchedGdeflateCompressGetMaxOutputChunkSize(
  * each compressed batch item (output). This pointer must be GPU accessible.
  * @param device_compressed_bytes The compressed size of each chunk on the GPU
  * (output). This pointer must be GPU accessible.
- * @param format_opts The GDeflate compression options to use.
+ * @param format_opts The LZ4 compression options to use.
  * @param stream The HIP stream to operate on.
  *
- * @return hipcompSuccess if successfully launched, and an error code otherwise.
+ * @return arctoSuccess if successfully launched, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedGdeflateCompressAsync(
+arctoStatus_t arctoBatchedLZ4CompressAsync(
     const void* const* device_uncompressed_ptrs,
     const size_t* device_uncompressed_bytes,
     size_t max_uncompressed_chunk_bytes,
@@ -154,9 +164,8 @@ hipcompStatus_t hipcompBatchedGdeflateCompressAsync(
     size_t temp_bytes,
     void* const* device_compressed_ptrs,
     size_t* device_compressed_bytes,
-    hipcompBatchedGdeflateOpts_t format_opts,
+    arctoBatchedLZ4Opts_t format_opts,
     hipStream_t stream);
-
 
 /**
  * @brief Get the amount of temp space required on the GPU for decompression.
@@ -167,29 +176,26 @@ hipcompStatus_t hipcompBatchedGdeflateCompressAsync(
  * @param temp_bytes The amount of temporary GPU space that will be required to
  * decompress.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedGdeflateDecompressGetTempSize(
-    size_t num_chunks,
-    size_t max_uncompressed_chunk_bytes,
-    size_t* temp_bytes);
+arctoStatus_t arctoBatchedLZ4DecompressGetTempSize(
+    size_t num_chunks, size_t max_uncompressed_chunk_bytes, size_t* temp_bytes);
 
 /**
  * @brief Perform decompression asynchronously. All pointers must be GPU
- * accessible. In the case where a chunk of compressed data is not a valid GDeflate
- * stream, 0 will be written for the size of the invalid chunk and
- * hipcompStatusCannotDecompress will be flagged for that chunk.
+ * accessible. In the case where a chunk of compressed data is not a valid LZ4
+ * block, 0 will be written for the size of the invalid chunk and
+ * arctoStatusCannotDecompress will be flagged for that chunk.
  *
  * @param device_compressed_ptrs The pointers on the GPU, to the compressed
  * chunks.
  * @param device_compressed_bytes The size of each compressed chunk on the GPU.
- * This pointer must be GPU accessible.
  * @param device_uncompressed_bytes The decompressed buffer size. This is needed
- * to prevent OOB accesses. This pointer must be GPU accessible.
+ * to prevent OOB accesses.
  * @param device_actual_uncompressed_bytes The actual calculated decompressed
  * size of each chunk. Can be nullptr if desired, 
  * in which case the actual_uncompressed_bytes is not reported.
- * @param batch_size The number of batch items.
+ * @param batch_size The number of chunks to decompress.
  * @param device_temp_ptr The temporary GPU space.
  * @param temp_bytes The size of the temporary GPU space.
  * @param device_uncompressed_ptrs The pointers on the GPU, to where to
@@ -199,9 +205,9 @@ hipcompStatus_t hipcompBatchedGdeflateDecompressGetTempSize(
  * in which case error status is not reported.
  * @param stream The HIP stream to operate on.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedGdeflateDecompressAsync(
+arctoStatus_t arctoBatchedLZ4DecompressAsync(
     const void* const* device_compressed_ptrs,
     const size_t* device_compressed_bytes,
     const size_t* device_uncompressed_bytes,
@@ -210,7 +216,7 @@ hipcompStatus_t hipcompBatchedGdeflateDecompressAsync(
     void* const device_temp_ptr,
     size_t temp_bytes,
     void* const* device_uncompressed_ptrs,
-    hipcompStatus_t* device_statuses,
+    arctoStatus_t* device_statuses,
     hipStream_t stream);
 
 /**
@@ -224,21 +230,20 @@ hipcompStatus_t hipcompBatchedGdeflateDecompressAsync(
  * accessible.
  * @param device_uncompressed_bytes The calculated decompressed size of each
  * chunk. Must be GPU accessible.
- * @param batch_size The number of chunks
+ * @param batch_size The number of chunks.
  * @param stream The HIP stream to operate on.
  *
- * @return hipcompSuccess if successful, and an error code otherwise.
+ * @return arctoSuccess if successful, and an error code otherwise.
  */
-hipcompStatus_t hipcompBatchedGdeflateGetDecompressSizeAsync(
+arctoStatus_t arctoBatchedLZ4GetDecompressSizeAsync(
     const void* const* device_compressed_ptrs,
     const size_t* device_compressed_bytes,
     size_t* device_uncompressed_bytes,
     size_t batch_size,
     hipStream_t stream);
 
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif // HIPCOMP_GDEFLATE_H
+#endif
