@@ -50,8 +50,10 @@
 #endif
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -416,7 +418,13 @@ run_benchmark_template(
   double comp_time = 0.0;
   double decomp_time = 0.0;
   std::vector<double> comp_throughputs;
+  std::vector<double> decomp_throughputs;
+  std::vector<double> comp_times_ms;
+  std::vector<double> decomp_times_ms;
   comp_throughputs.reserve(count);
+  decomp_throughputs.reserve(count);
+  comp_times_ms.reserve(count);
+  decomp_times_ms.reserve(count);
 
   // Measure H2D transfer overhead (representative of input upload cost)
   float h2d_ms = 0.0f;
@@ -492,6 +500,7 @@ run_benchmark_template(
     GPU_CHECK(hipEventElapsedTime(&compress_ms, start, end));
     if (!warmup) {
       comp_throughputs.push_back((double)total_bytes / (1.0e9 * compress_ms * 1.0e-3));
+      comp_times_ms.push_back(compress_ms);
     }
 
     // compute compression ratio
@@ -558,6 +567,10 @@ run_benchmark_template(
     GPU_CHECK(hipEventElapsedTime(&decompress_ms, start, end));
     GPU_CHECK(hipEventDestroy(start));
     GPU_CHECK(hipEventDestroy(end));
+    if (!warmup) {
+      decomp_throughputs.push_back((double)total_bytes / (1.0e9 * decompress_ms * 1.0e-3));
+      decomp_times_ms.push_back(decompress_ms);
+    }
 
     GPU_CHECK(hipFree(d_output_ptrs));
 
@@ -703,11 +716,30 @@ run_benchmark_template(
                 << std::setprecision(2) << total_comp_time_s << " s" << std::endl;
       std::cout << lbl("Avg Compression Ratio:")
                 << std::setprecision(2) << comp_ratio << "x" << std::endl;
+      auto stddev = [](const std::vector<double>& v) -> double {
+        if (v.size() < 2) return 0.0;
+        const double mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+        double sq = 0.0;
+        for (double x : v) sq += (x - mean) * (x - mean);
+        return std::sqrt(sq / v.size());
+      };
       if (count > 1 && !comp_throughputs.empty()) {
         const double tmin = *std::min_element(comp_throughputs.begin(), comp_throughputs.end());
         const double tmax = *std::max_element(comp_throughputs.begin(), comp_throughputs.end());
+        const double comp_std  = stddev(comp_throughputs);
+        const double decomp_std = stddev(decomp_throughputs);
+        const double comp_time_std = stddev(comp_times_ms);
+        const double decomp_time_std = stddev(decomp_times_ms);
         std::cout << lbl("Throughput Range:")
                   << std::setprecision(2) << tmin << " - " << tmax << " GB/s" << std::endl;
+        std::cout << lbl("Comp Throughput StdDev:")
+                  << std::setprecision(2) << comp_std << " GB/s" << std::endl;
+        std::cout << lbl("Decomp Throughput StdDev:")
+                  << std::setprecision(2) << decomp_std << " GB/s" << std::endl;
+        std::cout << lbl("Comp Time StdDev:")
+                  << std::setprecision(3) << comp_time_std << " ms" << std::endl;
+        std::cout << lbl("Decomp Time StdDev:")
+                  << std::setprecision(3) << decomp_time_std << " ms" << std::endl;
       }
       std::cout << lbl("Avg Throughput:")
                 << std::setprecision(2) << compression_throughput_gbs << " GB/s" << std::endl;
@@ -731,6 +763,10 @@ run_benchmark_template(
       std::cout << separator << "Transfer D2H (ms)";
       std::cout << separator << "Total time (ms)";
       std::cout << separator << "Avg chunk time (ms)";
+      std::cout << separator << "Comp throughput stddev (GB/s)";
+      std::cout << separator << "Decomp throughput stddev (GB/s)";
+      std::cout << separator << "Comp time stddev (ms)";
+      std::cout << separator << "Decomp time stddev (ms)";
       std::cout << std::endl;
 
       // CSV values
@@ -751,6 +787,19 @@ run_benchmark_template(
       std::cout << separator << d2h_ms;
       std::cout << separator << comp_total_ms;
       std::cout << separator << std::setprecision(6) << avg_chunk_time_ms;
+      {
+        auto stddev = [](const std::vector<double>& v) -> double {
+          if (v.size() < 2) return 0.0;
+          const double mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+          double sq = 0.0;
+          for (double x : v) sq += (x - mean) * (x - mean);
+          return std::sqrt(sq / v.size());
+        };
+        std::cout << separator << std::setprecision(4) << stddev(comp_throughputs);
+        std::cout << separator << stddev(decomp_throughputs);
+        std::cout << separator << stddev(comp_times_ms);
+        std::cout << separator << stddev(decomp_times_ms);
+      }
       std::cout << std::endl;
     }
   }
@@ -811,7 +860,13 @@ run_benchmark_template(
   double comp_time = 0.0;
   double decomp_time = 0.0;
   std::vector<double> comp_throughputs;
+  std::vector<double> decomp_throughputs;
+  std::vector<double> comp_times_ms;
+  std::vector<double> decomp_times_ms;
   comp_throughputs.reserve(count);
+  decomp_throughputs.reserve(count);
+  comp_times_ms.reserve(count);
+  decomp_times_ms.reserve(count);
 
   // Measure H2D transfer overhead (representative of input upload cost)
   float h2d_ms = 0.0f;
@@ -887,6 +942,7 @@ run_benchmark_template(
     GPU_CHECK(cudaEventElapsedTime(&compress_ms, start, end));
     if (!warmup) {
       comp_throughputs.push_back((double)total_bytes / (1.0e9 * compress_ms * 1.0e-3));
+      comp_times_ms.push_back(compress_ms);
     }
 
     // compute compression ratio
@@ -953,6 +1009,10 @@ run_benchmark_template(
     GPU_CHECK(cudaEventElapsedTime(&decompress_ms, start, end));
     GPU_CHECK(cudaEventDestroy(start));
     GPU_CHECK(cudaEventDestroy(end));
+    if (!warmup) {
+      decomp_throughputs.push_back((double)total_bytes / (1.0e9 * decompress_ms * 1.0e-3));
+      decomp_times_ms.push_back(decompress_ms);
+    }
 
     GPU_CHECK(cudaFree(d_output_ptrs));
 
@@ -1098,11 +1158,30 @@ run_benchmark_template(
                 << std::setprecision(2) << total_comp_time_s << " s" << std::endl;
       std::cout << lbl("Avg Compression Ratio:")
                 << std::setprecision(2) << comp_ratio << "x" << std::endl;
+      auto stddev = [](const std::vector<double>& v) -> double {
+        if (v.size() < 2) return 0.0;
+        const double mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+        double sq = 0.0;
+        for (double x : v) sq += (x - mean) * (x - mean);
+        return std::sqrt(sq / v.size());
+      };
       if (count > 1 && !comp_throughputs.empty()) {
         const double tmin = *std::min_element(comp_throughputs.begin(), comp_throughputs.end());
         const double tmax = *std::max_element(comp_throughputs.begin(), comp_throughputs.end());
+        const double comp_std  = stddev(comp_throughputs);
+        const double decomp_std = stddev(decomp_throughputs);
+        const double comp_time_std = stddev(comp_times_ms);
+        const double decomp_time_std = stddev(decomp_times_ms);
         std::cout << lbl("Throughput Range:")
                   << std::setprecision(2) << tmin << " - " << tmax << " GB/s" << std::endl;
+        std::cout << lbl("Comp Throughput StdDev:")
+                  << std::setprecision(2) << comp_std << " GB/s" << std::endl;
+        std::cout << lbl("Decomp Throughput StdDev:")
+                  << std::setprecision(2) << decomp_std << " GB/s" << std::endl;
+        std::cout << lbl("Comp Time StdDev:")
+                  << std::setprecision(3) << comp_time_std << " ms" << std::endl;
+        std::cout << lbl("Decomp Time StdDev:")
+                  << std::setprecision(3) << decomp_time_std << " ms" << std::endl;
       }
       std::cout << lbl("Avg Throughput:")
                 << std::setprecision(2) << compression_throughput_gbs << " GB/s" << std::endl;
@@ -1126,6 +1205,10 @@ run_benchmark_template(
       std::cout << separator << "Transfer D2H (ms)";
       std::cout << separator << "Total time (ms)";
       std::cout << separator << "Avg chunk time (ms)";
+      std::cout << separator << "Comp throughput stddev (GB/s)";
+      std::cout << separator << "Decomp throughput stddev (GB/s)";
+      std::cout << separator << "Comp time stddev (ms)";
+      std::cout << separator << "Decomp time stddev (ms)";
       std::cout << std::endl;
 
       // CSV values
@@ -1146,6 +1229,19 @@ run_benchmark_template(
       std::cout << separator << d2h_ms;
       std::cout << separator << comp_total_ms;
       std::cout << separator << std::setprecision(6) << avg_chunk_time_ms;
+      {
+        auto stddev = [](const std::vector<double>& v) -> double {
+          if (v.size() < 2) return 0.0;
+          const double mean = std::accumulate(v.begin(), v.end(), 0.0) / v.size();
+          double sq = 0.0;
+          for (double x : v) sq += (x - mean) * (x - mean);
+          return std::sqrt(sq / v.size());
+        };
+        std::cout << separator << std::setprecision(4) << stddev(comp_throughputs);
+        std::cout << separator << stddev(decomp_throughputs);
+        std::cout << separator << stddev(comp_times_ms);
+        std::cout << separator << stddev(decomp_times_ms);
+      }
       std::cout << std::endl;
     }
   }
